@@ -39,7 +39,7 @@ A county-level view of where data centers are concentrating, and how communities
 
 ## Acknowledgments
 
-This work is supported by the Ray C. Anderson Foundation, with project oversight from Georgia Tech, as part of Drawdown Georgia Phase 5.
+This work is supported by the Ray C. Anderson Foundation, with project oversight from Georgia Tech, as part of Drawdown Georgia Phase 5. Computational resources are provided by the Morehouse Supercomputing Facility.
 
 ## License
 
