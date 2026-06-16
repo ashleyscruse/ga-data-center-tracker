@@ -4,6 +4,11 @@ _planning/
 
 # Local-only files (Claude context, personal notes)
 CLAUDE.md
+# Obsidian KB node for this project (holds budget, internal tasks)
+ga-data-center-tracker.md
+
+# Internal meeting documents (agendas, etc.) — never publish
+*.pdf
 
 # Python
 __pycache__/
@@ -37,7 +42,8 @@ ENV/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Data files (add specific exceptions as needed)
+# Data files
+# Raw and interim are local-only (scraped/intermediate, often large or licensing-bound).
 data/raw/
 data/interim/
 *.csv
@@ -46,6 +52,13 @@ data/interim/
 *.xlsx
 *.zip
 *.gz
+
+# Committed data: the county reference table and the final processed dataset are
+# part of the public deliverable, so re-include them despite the broad rules above.
+!data/reference/
+!data/reference/**
+!data/processed/
+!data/processed/**
 
 # Environment variables / secrets
 .env
