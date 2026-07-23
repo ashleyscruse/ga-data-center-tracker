@@ -5,8 +5,24 @@ scraper, aggregate to per-county indicators, and write the GT-conformant
 ``.xlsx`` deliverable.
 
 This is the single entry point a future maintainer (or Ashley, a year from now)
-runs to regenerate the dataset. As more scrapers land, register them in
-``SCRAPERS`` and add their variables to the assembled dataset.
+runs to regenerate the dataset. As more scrapers land, register them here and add
+their variables to the assembled dataset.
+
+Sources currently wired in:
+
+  * **Georgia EPD Air Protection Branch** (``ga_epd_air``) -> permitted facilities,
+    county-resolved from the AIRS number, with issuance dates. The primary facility
+    source: it is state-level, dated, and reaches the construction-permitting stage.
+  * **EPA FRS** (``epa_frs``) -> federally registered facilities. Retained as an
+    independent cross-check on EPD rather than a substitute for it.
+  * **Georgia Tech EPIcenter Ordinance Hub** (``epicenter``) -> local government
+    response: which counties have adopted a data center ordinance, and which have
+    adopted a moratorium. This is the community engagement strand's first source.
+
+The facility sources are reported as separate variables. They are not merged into a
+single facility count, because reconciling them requires entity resolution across
+differing operator names and addresses, and a silently wrong merge is worse in a
+published dataset than two honestly separate counts. See ``docs/methodology.md``.
 
 Run:  ``python -m ga_data_center_tracker.pipeline --out data/processed/ga_data_centers.xlsx``
 """
@@ -14,11 +30,36 @@ Run:  ``python -m ga_data_center_tracker.pipeline --out data/processed/ga_data_c
 from __future__ import annotations
 
 import argparse
+from datetime import date
 from pathlib import Path
 
 from .counties import REFERENCE_CSV_PATH, build_reference_csv, load_reference
 from .delivery import Dataset, Variable, build_long_rows, write_workbook
-from .scrapers import epa_frs
+from .scrapers import epa_frs, epicenter, ga_epd_air
+
+# Facilities first permitted in this year or later count as the current buildout.
+# 2023 is the inflection point in the EPD permit record: before it, Georgia issued
+# roughly one data center air permit a year.
+BUILDOUT_START_YEAR = 2023
+
+# Uniform column set for the Original sheet, so records from every source stack
+# into one table.
+ORIGINAL_COLUMNS = [
+    "source",
+    "source_id",
+    "name",
+    "county",
+    "county_fips",
+    "stage",
+    "first_permit_date",
+    "latest_permit_date",
+    "permit_count",
+    "permit_types",
+    "city",
+    "address",
+    "operating_status",
+    "program",
+]
 
 
 def ensure_reference() -> None:
@@ -27,61 +68,272 @@ def ensure_reference() -> None:
         build_reference_csv()
 
 
-def run(out_path: Path, *, max_lookups: int | None = None, verbose: bool = True) -> Path:
+def _epd_original_rows(facilities) -> list[dict[str, object]]:
+    """Flatten EPD facility records into the shared Original-sheet schema."""
+    rows = []
+    for f in facilities:
+        row: dict[str, object] = {col: "" for col in ORIGINAL_COLUMNS}
+        row.update(
+            {
+                "source": f.source,
+                "source_id": f.airs_number,
+                "name": f.name,
+                "county": f.county or "",
+                "county_fips": f.county_fips or "",
+                "stage": f.stage,
+                "first_permit_date": (
+                    f.first_permit_date.isoformat() if f.first_permit_date else ""
+                ),
+                "latest_permit_date": (
+                    f.latest_permit_date.isoformat() if f.latest_permit_date else ""
+                ),
+                "permit_count": f.permit_count,
+                "permit_types": f.permit_types,
+            }
+        )
+        rows.append(row)
+    return rows
+
+
+def _frs_original_rows(records) -> list[dict[str, object]]:
+    """Flatten FRS facility records into the shared Original-sheet schema."""
+    rows = []
+    for r in records:
+        row: dict[str, object] = {col: "" for col in ORIGINAL_COLUMNS}
+        row.update(
+            {
+                "source": r.source,
+                "source_id": r.registry_id,
+                "name": r.name,
+                "county": r.county or "",
+                "county_fips": r.county_fips or "",
+                "stage": r.stage,
+                "city": r.city,
+                "address": r.address,
+                "operating_status": r.operating_status,
+                "program": r.program,
+            }
+        )
+        rows.append(row)
+    return rows
+
+
+def run(
+    out_path: Path,
+    *,
+    max_lookups: int | None = None,
+    skip_frs: bool = False,
+    skip_epicenter: bool = False,
+    verbose: bool = True,
+) -> Path:
     """Run the full pipeline and write the deliverable workbook.
 
-    Currently wires up the EPA FRS source. Additional sources are added here as
-    their scrapers come online (Georgia Power OASIS, county permits, minutes).
+    Args:
+        out_path: where to write the ``.xlsx``.
+        max_lookups: cap FRS per-ID lookups, for quick test runs.
+        skip_frs: skip the FRS pass. FRS requires thousands of per-ID lookups and
+            takes far longer than EPD, so this allows a fast EPD-only rebuild.
+        skip_epicenter: skip the EPIcenter pass. Useful while its redistribution
+            terms are still being confirmed with Georgia Tech.
+        verbose: print progress.
     """
     ensure_reference()
+    pulled_on = date.today().isoformat()
+    counties = load_reference()
+    county_values: dict[str, dict[str, object]] = {c.tracker_name: {} for c in counties}
+    original_rows: list[dict[str, object]] = []
+    variables: list[Variable] = []
 
+    # --- Georgia EPD air permits ------------------------------------------------
     if verbose:
-        print("Scraping EPA FRS (operational / permitted facilities)...")
-    frs_records = epa_frs.scrape_georgia_data_centers(max_lookups=max_lookups, verbose=verbose)
-    frs_counts = epa_frs.records_to_county_counts(frs_records)
-
-    # Per-county value map. As sources are added, merge their counts in here.
-    county_values: dict[str, dict[str, object]] = {
-        county.tracker_name: {"dc_operational_n": frs_counts[county.tracker_name]}
-        for county in load_reference()
-    }
-
-    long_rows = build_long_rows(county_values)
-
-    # Original sheet: the resolved facility-level records behind the counts.
-    original_rows = [
-        {
-            "registry_id": r.registry_id,
-            "name": r.name,
-            "county": r.county,
-            "county_fips": r.county_fips,
-            "city": r.city,
-            "address": r.address,
-            "operating_status": r.operating_status,
-            "program": r.program,
-            "source": r.source,
-        }
-        for r in frs_records
-    ]
-
-    variables = [
+        print("Scraping Georgia EPD air permits (permitted facilities)...")
+    permits = ga_epd_air.scrape_permits(verbose=verbose)
+    epd_facilities = ga_epd_air.permits_to_facilities(permits)
+    epd_counts = ga_epd_air.facilities_to_county_counts(epd_facilities)
+    epd_recent = ga_epd_air.facilities_to_recent_county_counts(
+        epd_facilities, since_year=BUILDOUT_START_YEAR
+    )
+    for county in counties:
+        county_values[county.tracker_name]["dc_permitted_n"] = epd_counts[county.tracker_name]
+        county_values[county.tracker_name]["dc_permitted_recent_n"] = epd_recent[
+            county.tracker_name
+        ]
+    original_rows += _epd_original_rows(epd_facilities)
+    variables += [
         Variable(
-            varname="dc_operational_n",
-            definition="Count of operational / permitted data centers (NAICS 518210) in the county.",
+            varname="dc_permitted_n",
+            definition=(
+                "Count of data center facilities in the county holding a Georgia EPD "
+                "air permit, cumulative across all issuance years."
+            ),
             units="facilities",
-            source="EPA Facility Registry Service (FRS)",
-            vintage="current FRS snapshot",
-            date_pulled="",  # stamped at delivery time
-            original_name="NAICS 518210 facilities, FRS",
-            transformations="Filtered to Georgia; county-matched by FIPS; deduplicated by registry_id.",
+            source="Georgia EPD Air Protection Branch, Air Permit Search Engine",
+            vintage="current permit database snapshot",
+            date_pulled=pulled_on,
+            original_name="Issued air permits, SIC 7374 (Data Processing and Preparation)",
+            transformations=(
+                "Searched by SIC code 7374; county derived from the 3-digit county FIPS "
+                "prefix of the AIRS number; permit records collapsed to one row per "
+                "facility (AIRS number); counted by county."
+            ),
+        ),
+        Variable(
+            varname="dc_permitted_recent_n",
+            definition=(
+                "Count of data center facilities in the county whose first Georgia EPD "
+                f"air permit was issued in {BUILDOUT_START_YEAR} or later."
+            ),
+            units="facilities",
+            source="Georgia EPD Air Protection Branch, Air Permit Search Engine",
+            vintage="current permit database snapshot",
+            date_pulled=pulled_on,
+            original_name="Issued air permits, SIC 7374 (Data Processing and Preparation)",
+            transformations=(
+                "As dc_permitted_n, then restricted to facilities whose earliest permit "
+                f"issuance date falls in {BUILDOUT_START_YEAR} or later. Separates the "
+                "current buildout from the pre-existing facility stock."
+            ),
         ),
     ]
+
+    # --- EPA FRS ----------------------------------------------------------------
+    if not skip_frs:
+        if verbose:
+            print("Scraping EPA FRS (federally registered facilities)...")
+        frs_records = epa_frs.scrape_georgia_data_centers(
+            max_lookups=max_lookups, verbose=verbose
+        )
+        frs_counts = epa_frs.records_to_county_counts(frs_records)
+        for county in counties:
+            county_values[county.tracker_name]["dc_frs_n"] = frs_counts[county.tracker_name]
+        original_rows += _frs_original_rows(frs_records)
+        variables.append(
+            Variable(
+                varname="dc_frs_n",
+                definition=(
+                    "Count of facilities in the county listed in the EPA Facility Registry "
+                    "Service under NAICS 518210 (Data Processing, Hosting, and Related "
+                    "Services). An independent federal cross-check on the EPD permit count."
+                ),
+                units="facilities",
+                source="EPA Facility Registry Service (FRS)",
+                vintage="current FRS snapshot",
+                date_pulled=pulled_on,
+                original_name="NAICS 518210 facilities, FRS",
+                transformations=(
+                    "Filtered to Georgia; county-matched by FIPS; deduplicated by registry_id."
+                ),
+            )
+        )
+
+    # --- Georgia Tech EPIcenter: local government response -----------------------
+    if not skip_epicenter:
+        if verbose:
+            print("Fetching Georgia Tech EPIcenter Ordinance Hub (local response)...")
+        hub = epicenter.fetch_hub_data(verbose=verbose)
+        unresolved = epicenter.unresolved_moratoria(hub.moratoria)
+        if unresolved and verbose:
+            print(
+                "  manual review: moratoria whose jurisdiction did not resolve to a "
+                f"county: {[m.jurisdiction for m in unresolved]}"
+            )
+        ordinance_flags = epicenter.regulations_to_ordinance_flags(hub.regulations)
+        moratoria_ever = epicenter.moratoria_to_county_counts(hub.moratoria)
+        moratoria_active = epicenter.moratoria_to_county_counts(
+            hub.moratoria, active_on=date.today()
+        )
+        for county in counties:
+            name = county.tracker_name
+            county_values[name]["dc_ordinance"] = ordinance_flags[name]
+            county_values[name]["dc_moratorium_n"] = moratoria_ever[name]
+            county_values[name]["dc_moratorium_active_n"] = moratoria_active[name]
+            county_values[name]["dc_local_action"] = int(
+                ordinance_flags[name] == 1 or moratoria_ever[name] > 0
+            )
+        variables += [
+            Variable(
+                varname="dc_ordinance",
+                definition=(
+                    "1 if the county has adopted a land-use ordinance addressing data "
+                    "centers, 0 otherwise."
+                ),
+                units="flag (0/1)",
+                source=epicenter.ATTRIBUTION,
+                vintage="current Hub snapshot",
+                date_pulled=pulled_on,
+                original_name="Data Center Regulations in Georgia (county ordinance status)",
+                transformations=(
+                    "Read from the Hub's per-county regulation table, keyed by 5-digit "
+                    "county FIPS and validated against the county reference table."
+                ),
+            ),
+            Variable(
+                varname="dc_moratorium_n",
+                definition=(
+                    "Count of data center moratoria adopted in the county, including "
+                    "moratoria adopted by municipalities within it, and including "
+                    "moratoria that have since expired."
+                ),
+                units="moratoria",
+                source=epicenter.ATTRIBUTION,
+                vintage="current Hub snapshot",
+                date_pulled=pulled_on,
+                original_name="Data Center Moratoria in Georgia",
+                transformations=(
+                    "County jurisdictions matched directly; municipal jurisdictions "
+                    "assigned to their containing county via an explicit lookup table. "
+                    "Expired moratoria are retained, because an expired moratorium is "
+                    "still evidence that the community formally responded."
+                ),
+            ),
+            Variable(
+                varname="dc_moratorium_active_n",
+                definition=(
+                    "Count of data center moratoria in force in the county on the date "
+                    "the dataset was pulled."
+                ),
+                units="moratoria",
+                source=epicenter.ATTRIBUTION,
+                vintage="current Hub snapshot",
+                date_pulled=pulled_on,
+                original_name="Data Center Moratoria in Georgia",
+                transformations=(
+                    "As dc_moratorium_n, restricted to moratoria whose start date has "
+                    "passed and whose expiration date has not. A moratorium with no "
+                    "parsable start date is excluded rather than assumed active."
+                ),
+            ),
+            Variable(
+                varname="dc_local_action",
+                definition=(
+                    "1 if the county has either a data center ordinance or a recorded "
+                    "moratorium, 0 otherwise. A single flag for whether local government "
+                    "has formally acted on data center siting."
+                ),
+                units="flag (0/1)",
+                source=epicenter.ATTRIBUTION,
+                vintage="current Hub snapshot",
+                date_pulled=pulled_on,
+                original_name="Derived",
+                transformations=(
+                    "Logical OR of dc_ordinance and dc_moratorium_n > 0. Unweighted and "
+                    "deliberately simple, so it can be read without consulting a formula."
+                ),
+            ),
+        ]
+
+    long_rows = build_long_rows(county_values)
 
     dataset = Dataset(
         original_rows=original_rows,
         long_rows=long_rows,
         variables=variables,
-        notes="Phase 5 draft. EPA FRS source only; more sources pending.",
+        notes=(
+            "Phase 5 working dataset. Facility stage from Georgia EPD air permits and "
+            "EPA FRS; local government response from the Georgia Tech EPIcenter "
+            "Ordinance Hub. EPIcenter-derived variables are attributed to Georgia Tech "
+            "and their redistribution terms are pending confirmation."
+        ),
     )
 
     written = write_workbook(dataset, out_path)
@@ -102,10 +354,25 @@ def main() -> None:
         "--max-lookups",
         type=int,
         default=None,
-        help="Cap per-ID lookups for a quick test run (default: process all).",
+        help="Cap FRS per-ID lookups for a quick test run (default: process all).",
+    )
+    parser.add_argument(
+        "--skip-frs",
+        action="store_true",
+        help="Skip the slow EPA FRS pass and build from Georgia EPD only.",
+    )
+    parser.add_argument(
+        "--skip-epicenter",
+        action="store_true",
+        help="Skip the Georgia Tech EPIcenter pass (local ordinance and moratorium data).",
     )
     args = parser.parse_args()
-    run(args.out, max_lookups=args.max_lookups)
+    run(
+        args.out,
+        max_lookups=args.max_lookups,
+        skip_frs=args.skip_frs,
+        skip_epicenter=args.skip_epicenter,
+    )
 
 
 if __name__ == "__main__":

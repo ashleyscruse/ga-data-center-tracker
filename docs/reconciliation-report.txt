@@ -1,0 +1,69 @@
+Cross-source reconciliation, Georgia data centers
+================================================================
+
+Statewide totals
+  GA EPD air permits (permitted)       34
+  EPA FRS (federally registered)        0
+  EPIcenter mapped, all stages        123
+    of which operational               73
+    of which under construction        16
+    of which planned                   34
+  Counties with any activity           32
+
+  EPIcenter points not resolved to a Georgia county: 0
+
+County detail (sources disagree by design; see methodology)
+  county                      EPD  FRS  EPIc  oper const  plan
+  Fulton                       15    0    45    35     4     6
+  Douglas                       7    0    16     9     4     3
+  Gwinnett                      2    0     6     6     0     0
+  Cobb                          0    0     6     5     1     0
+  Whitfield                     1    0     5     4     1     0
+  Newton                        3    0     4     1     0     3
+  Troup                         1    0     3     1     0     2
+  Bartow                        0    0     3     0     1     2
+  Coweta                        0    0     3     0     0     3
+  Monroe                        0    0     3     0     0     3
+  Fayette                       1    0     2     1     0     1
+  Henry                         1    0     2     0     1     1
+  Rockdale                      1    0     2     0     1     1
+  Clayton                       0    0     2     0     1     1
+  DeKalb                        0    0     2     2     0     0
+  Emanuel                       0    0     2     2     0     0
+  Floyd                         0    0     2     0     1     1
+  Spalding                      0    0     2     0     0     2
+  Washington                    0    0     2     2     0     0
+  Appling                       0    0     1     1     0     0
+  Banks                         0    0     1     0     1     0
+  Carroll                       0    0     1     1     0     0
+  Columbia                      0    0     1     0     0     1
+  Cook                          0    0     1     1     0     0
+  Crisp                         0    0     1     0     0     1
+  Richmond                      0    0     1     0     0     1
+  Toombs                        0    0     1     1     0     0
+  Twiggs                        0    0     1     0     0     1
+  Walton                        0    0     1     0     0     1
+  Wilkes                        0    0     1     1     0     0
+  Forsyth                       1    0     0     0     0     0
+  Jackson                       1    0     0     0     0     0
+
+Counties EPIcenter maps but EPD permits do not reach (21):
+  Cobb                        6 mapped  (0 planned, 1 building, 5 operating)
+  Bartow                      3 mapped  (2 planned, 1 building, 0 operating)
+  Coweta                      3 mapped  (3 planned, 0 building, 0 operating)
+  Monroe                      3 mapped  (3 planned, 0 building, 0 operating)
+  Clayton                     2 mapped  (1 planned, 1 building, 0 operating)
+  DeKalb                      2 mapped  (0 planned, 0 building, 2 operating)
+  Emanuel                     2 mapped  (0 planned, 0 building, 2 operating)
+  Floyd                       2 mapped  (1 planned, 1 building, 0 operating)
+  Spalding                    2 mapped  (2 planned, 0 building, 0 operating)
+  Washington                  2 mapped  (0 planned, 0 building, 2 operating)
+  Appling                     1 mapped  (0 planned, 0 building, 1 operating)
+  Banks                       1 mapped  (0 planned, 1 building, 0 operating)
+  Carroll                     1 mapped  (0 planned, 0 building, 1 operating)
+  Columbia                    1 mapped  (1 planned, 0 building, 0 operating)
+  Cook                        1 mapped  (0 planned, 0 building, 1 operating)
+
+Counties EPD permits but EPIcenter's map does not show (2):
+  Forsyth                     1 permitted
+  Jackson                     1 permitted
