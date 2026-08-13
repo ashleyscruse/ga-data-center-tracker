@@ -41,6 +41,7 @@ Every source follows the same shape: **pull, resolve, county-match, count, deliv
 | `src/ga_data_center_tracker/cleaning/reconcile.py` | Compares the sources county by county and renders the reconciliation report. |
 | `src/ga_data_center_tracker/delivery.py` | The output format. Writes the GT-required `.xlsx` workbook. |
 | `src/ga_data_center_tracker/pipeline.py` | The orchestrator. One command runs everything. |
+| `src/ga_data_center_tracker/ordinances.py` | Builds the companion ordinance and moratorium workbook. |
 | `data/reference/ga_counties.csv` | The committed county reference table (the join key for everything). |
 | `data/processed/` | The delivered dataset. |
 | `docs/` | Methodology, data dictionary, sources, output format, update guide, and this walkthrough. |

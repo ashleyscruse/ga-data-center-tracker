@@ -76,6 +76,8 @@ Each source below lists its status, what it gives us, how it is accessed, the co
 - **Known limit:** the 18 unfingerprinted counties are likely PDF-only or bespoke, which is the slow tail. They are named in the recon report rather than hidden in a percentage.
 
 ### Data center ordinances and moratoria (Georgia Tech EPIcenter Ordinance Hub)
+
+**Also delivered as its own workbook**, `data/processed/ga_data_center_ordinances.xlsx`, built by `python -m ga_data_center_tracker.ordinances`. Same five-sheet Tracker format and the same county join key, so it loads exactly like the facility dataset. Its `Original` sheet carries one row per ordinance or moratorium (jurisdiction, type, dates, status) rather than one row per facility, and it adds two variables the facility workbook does not: `dc_moratorium_expired_n` and `dc_moratorium_city_n`. The four shared variables are identical in both files.
 - **Status:** live. First source in the community engagement strand.
 - **What:** which Georgia jurisdictions have adopted a data center ordinance, and which have adopted a moratorium, with start and expiration dates. EPIcenter reviews municipal codes across 180+ Georgia cities and counties.
 - **Access:** `https://epicenter.energy.gatech.edu/data-center/`. The Hub's figures are Datawrapper charts, and Datawrapper serves each chart's underlying table at `<chart-url>/dataset.csv`. Chart IDs are discovered from the Hub page at run time, because the URLs carry a version number that changes on each republish.

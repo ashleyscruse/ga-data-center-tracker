@@ -52,6 +52,16 @@ The output is a Solutions Tracker `.xlsx` workbook (see [output_format.md](outpu
 
 The EPD scrape is a few minutes (it pages through the state permit search). EPIcenter is seconds, because the 123 facility points are reverse-geocoded once and then cached in `data/interim/point_county_cache.json`. **Delete that cache file to force fresh geocoding**, which takes about a minute and should only be needed if EPIcenter adds facilities.
 
+## Build the ordinance workbook
+
+A companion deliverable in the same Tracker format, covering local government response.
+
+```bash
+python -m ga_data_center_tracker.ordinances --out data/processed/ga_data_center_ordinances.xlsx
+```
+
+It refetches the EPIcenter Hub, so run it whenever the facility dataset is rebuilt. **The four variables it shares with the facility workbook must match**; they are computed from the same Hub tables by the same functions, so a divergence means one of the two builds is stale.
+
 ## Refresh the reconciliation report
 
 The cross-source comparison in `docs/reconciliation-report.txt` is what tells you whether the sources still agree with each other. It is not rebuilt by the pipeline, so regenerate it after a refresh:

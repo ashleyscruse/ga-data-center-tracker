@@ -46,6 +46,15 @@ Definitions for every field in the county-level dataset. One row per Georgia cou
 
 The live engagement variables capture what local **government** did, which is formal, dated, and countable. What **residents** said is the planned half of this strand.
 
+**A companion workbook, `ga_data_center_ordinances.xlsx`, carries the same four variables plus two more**, and keeps the underlying records rather than only the counts:
+
+| Field | Type | Definition |
+|---|---|---|
+| `dc_moratorium_expired_n` | integer | Moratoria adopted in the county that have since lapsed. Reported separately because every Georgia moratorium has now expired, so the active count alone reads as though nothing happened. |
+| `dc_moratorium_city_n` | integer | Of the county's moratoria, how many a municipality adopted rather than the county government. Separated so a city moratorium counted at county level does not imply the county itself acted. |
+
+Its `Original` sheet is one row per ordinance or moratorium, with jurisdiction, type, start and expiration dates, and status.
+
 ## Composite indicators
 
 | Field | Type | Definition | Source | Status |
