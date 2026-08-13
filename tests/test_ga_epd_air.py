@@ -110,3 +110,51 @@ def test_recent_counts_use_the_first_permit_date():
     recent = facilities_to_recent_county_counts(facilities, since_year=2023)
     assert recent["Fulton County, Georgia"] == 0
     assert recent["Douglas County, Georgia"] == 1
+
+
+# --- SIC adjudication ---------------------------------------------------------
+#
+# Georgia EPD files some data centers under catch-all codes shared with unrelated
+# industry, so those codes cannot be swept in wholesale and individual facilities
+# are named instead. These guard the named list, because a facility silently
+# dropping off it would quietly lower the published count.
+
+from ga_data_center_tracker.scrapers.ga_epd_air import (  # noqa: E402
+    _AIRS_RE,
+    ADJUDICATED_EXCLUSIONS,
+    ADJUDICATED_INCLUSIONS,
+    DATA_CENTER_SIC_CODES,
+    REVIEW_SIC_CODES,
+)
+
+
+def test_google_douglas_county_is_adjudicated_in():
+    # The facility this mechanism exists for: Google's Douglas County data center,
+    # filed under 7389 alongside a sterilization plant.
+    assert "097-00061" in ADJUDICATED_INCLUSIONS
+    assert "Google" in ADJUDICATED_INCLUSIONS["097-00061"]
+
+
+def test_every_adjudicated_entry_records_a_reason():
+    for airs, reason in {**ADJUDICATED_INCLUSIONS, **ADJUDICATED_EXCLUSIONS}.items():
+        assert len(reason) > 30, f"{airs} needs a real reason, not a label"
+
+
+def test_adjudicated_airs_numbers_are_well_formed():
+    for airs in {**ADJUDICATED_INCLUSIONS, **ADJUDICATED_EXCLUSIONS}:
+        assert _AIRS_RE.match(airs), airs
+
+
+def test_inclusions_and_exclusions_do_not_overlap():
+    assert not set(ADJUDICATED_INCLUSIONS) & set(ADJUDICATED_EXCLUSIONS)
+
+
+def test_review_codes_are_not_also_counted_wholesale():
+    # If a review code ever moves into DATA_CENTER_SIC_CODES, the adjudication list
+    # for it becomes dead weight and the unrelated facilities get swept in.
+    assert not set(REVIEW_SIC_CODES) & set(DATA_CENTER_SIC_CODES)
+
+
+def test_airport_stays_excluded():
+    # Hartsfield-Jackson carries a 4813 permit. It is not a data center.
+    assert "063-00030" in ADJUDICATED_EXCLUSIONS

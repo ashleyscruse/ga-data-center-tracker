@@ -77,6 +77,41 @@ def build_long_rows(
     return rows
 
 
+def build_transformed_rows(
+    county_values: Mapping[str, Mapping[str, object]],
+) -> list[dict[str, object]]:
+    """Turn ``{county: {varname: value}}`` into the wide analysis table.
+
+    One row per county, one column per variable, in the reference table's county
+    order. This is the cleaned-and-joined form the Long sheet is melted from, and
+    it is the sheet a human actually reads: 159 rows, one per Georgia county,
+    including the counties where every indicator is zero.
+
+    A county missing a variable gets an empty cell rather than a zero, because a
+    variable that was never computed for a county is not the same claim as a
+    variable computed to be zero.
+    """
+    ref_order = [c.tracker_name for c in load_reference()]
+    ordered_counties = [c for c in ref_order if c in county_values]
+    ordered_counties += [c for c in county_values if c not in ref_order]
+
+    # Column order follows first appearance across counties, matching the order the
+    # pipeline registered the variables in.
+    columns: list[str] = []
+    for county in ordered_counties:
+        for varname in county_values[county]:
+            if varname not in columns:
+                columns.append(varname)
+
+    rows: list[dict[str, object]] = []
+    for county in ordered_counties:
+        row: dict[str, object] = {"county": county}
+        for varname in columns:
+            row[varname] = county_values[county].get(varname, "")
+        rows.append(row)
+    return rows
+
+
 def _valid_counties() -> set[str]:
     return {c.tracker_name for c in load_reference()}
 

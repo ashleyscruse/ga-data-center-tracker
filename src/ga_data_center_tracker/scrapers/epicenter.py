@@ -278,6 +278,61 @@ def moratoria_to_county_counts(
     return counts
 
 
+# The development map's Status values, mapped to the variable each one feeds.
+STAGE_VARS = {
+    "operational": "dc_operational_n",
+    "construction": "dc_construction_n",
+    "planned": "dc_planned_n",
+}
+STAGE_TOTAL_VAR = "dc_mapped_n"
+
+
+def points_to_stage_counts(
+    points: list[dict[str, str]], *, verbose: bool = False
+) -> dict[str, dict[str, int]]:
+    """Per-county facility counts by development stage, plus an all-stage total.
+
+    Counts come from the **development symbol map**, which publishes one row per
+    facility, not from the regulations choropleth. That distinction matters and is
+    easy to get wrong: the regulations table's ``Operational`` / ``Under
+    construction`` / ``Planned`` columns are 0/1 presence flags telling you whether
+    a county has any facility at that stage, so summing them undercounts badly
+    (Douglas County reads 1 there and has 16 facilities on the map).
+
+    Each point is a bare coordinate with a stage and no name or address, so it is
+    resolved to a county through the Census geocoder. Results are cached on disk,
+    so repeat runs cost nothing. Points that do not land in a Georgia county are
+    dropped rather than assigned.
+    """
+    # Imported here rather than at module scope: the geocoding helper lives in the
+    # cleaning layer, and only this function needs it.
+    from ..cleaning.reconcile import resolve_points
+
+    counts = {
+        c.tracker_name: {v: 0 for v in (*STAGE_VARS.values(), STAGE_TOTAL_VAR)}
+        for c in load_reference()
+    }
+    by_fips = {c.fips: c.tracker_name for c in load_reference()}
+    resolved, unresolved = resolve_points(points, verbose=verbose)
+    if unresolved and verbose:
+        print(f"  {unresolved} EPIcenter points did not resolve to a Georgia county")
+
+    for point in points:
+        key = (
+            f"{(point.get('latitude') or '').strip()},"
+            f"{(point.get('longitude') or '').strip()}"
+        )
+        tracker_name = by_fips.get(resolved.get(key, ""))
+        if tracker_name is None:
+            continue
+        row = counts[tracker_name]
+        row[STAGE_TOTAL_VAR] += 1
+        varname = STAGE_VARS.get((point.get("Status") or "").strip().lower())
+        if varname:
+            row[varname] += 1
+    return counts
+
+
 def regulations_to_ordinance_flags(regulations: list[CountyRegulation]) -> dict[str, int]:
     """Per-county 1/0 flag for whether the county has a data center ordinance."""
     flags = {c.tracker_name: 0 for c in load_reference()}

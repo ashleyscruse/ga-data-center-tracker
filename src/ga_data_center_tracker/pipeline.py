@@ -33,9 +33,20 @@ import argparse
 from datetime import date
 from pathlib import Path
 
-from .counties import REFERENCE_CSV_PATH, build_reference_csv, load_reference
-from .delivery import Dataset, Variable, build_long_rows, write_workbook
-from .scrapers import epa_frs, epicenter, ga_epd_air
+from .counties import (
+    REFERENCE_CSV_PATH,
+    build_reference_csv,
+    load_reference,
+    normalize_county,
+)
+from .delivery import (
+    Dataset,
+    Variable,
+    build_long_rows,
+    build_transformed_rows,
+    write_workbook,
+)
+from .scrapers import epa_frs, epd_permit_docs, epicenter, ga_epd_air, institutional
 
 # Facilities first permitted in this year or later count as the current buildout.
 # 2023 is the inflection point in the EPD permit record: before it, Georgia issued
@@ -59,6 +70,11 @@ ORIGINAL_COLUMNS = [
     "address",
     "operating_status",
     "program",
+    # From the permit PDFs for EPD facilities; hand-entered for institutional ones.
+    "zip_code",
+    # Public citation: the permit PDF for EPD rows, the announcement for curated ones.
+    "source_url",
+    "note",
 ]
 
 
@@ -68,11 +84,27 @@ def ensure_reference() -> None:
         build_reference_csv()
 
 
-def _epd_original_rows(facilities) -> list[dict[str, object]]:
-    """Flatten EPD facility records into the shared Original-sheet schema."""
+def _epd_original_rows(facilities, addresses=None) -> list[dict[str, object]]:
+    """Flatten EPD facility records into the shared Original-sheet schema.
+
+    ``addresses`` comes from the permit PDFs (see ``epd_permit_docs``); the search
+    grid itself publishes no address. A facility whose permit is a scanned image,
+    or which has no permit PDF at all, simply keeps empty address fields.
+    """
+    addresses = addresses or {}
     rows = []
     for f in facilities:
         row: dict[str, object] = {col: "" for col in ORIGINAL_COLUMNS}
+        addr = addresses.get(f.airs_number)
+        if addr is not None:
+            row.update(
+                {
+                    "address": addr.street,
+                    "city": addr.city,
+                    "zip_code": addr.zip_code,
+                    "source_url": addr.pdf_url,
+                }
+            )
         row.update(
             {
                 "source": f.source,
@@ -118,6 +150,30 @@ def _frs_original_rows(records) -> list[dict[str, object]]:
     return rows
 
 
+def _institutional_original_rows(facilities) -> list[dict[str, object]]:
+    """Flatten institutional facility records into the shared Original-sheet schema."""
+    rows = []
+    fips_by_name = {c.tracker_name: c.fips for c in load_reference()}
+    for f in facilities:
+        row: dict[str, object] = {col: "" for col in ORIGINAL_COLUMNS}
+        tracker_name = normalize_county(f.county_raw)
+        row.update(
+            {
+                "source": f.source,
+                "source_id": f.institution,
+                "name": f.name,
+                "county": tracker_name or "",
+                "county_fips": fips_by_name.get(tracker_name, ""),
+                "stage": f.stage,
+                "city": f.city,
+                "source_url": f.source_url,
+                "note": f.note,
+            }
+        )
+        rows.append(row)
+    return rows
+
+
 def run(
     out_path: Path,
     *,
@@ -147,8 +203,20 @@ def run(
     # --- Georgia EPD air permits ------------------------------------------------
     if verbose:
         print("Scraping Georgia EPD air permits (permitted facilities)...")
-    permits = ga_epd_air.scrape_permits(verbose=verbose)
+    permits = ga_epd_air.scrape_data_center_permits(verbose=verbose)
     epd_facilities = ga_epd_air.permits_to_facilities(permits)
+
+    # Addresses live in the permit PDFs, not the search grid. Cached on disk, so
+    # this is a no-op after the first run.
+    if verbose:
+        print("Reading facility addresses from permit PDFs...")
+    epd_addresses = epd_permit_docs.fetch_addresses(epd_facilities, verbose=False)
+    if verbose:
+        print(f"  {len(epd_addresses)}/{len(epd_facilities)} facilities have an address")
+        for airs, derived, printed in epd_permit_docs.county_disagreements(
+            epd_addresses, epd_facilities
+        ):
+            print(f"  WARNING {airs}: AIRS says {derived}, permit says {printed}")
     epd_counts = ga_epd_air.facilities_to_county_counts(epd_facilities)
     epd_recent = ga_epd_air.facilities_to_recent_county_counts(
         epd_facilities, since_year=BUILDOUT_START_YEAR
@@ -158,7 +226,7 @@ def run(
         county_values[county.tracker_name]["dc_permitted_recent_n"] = epd_recent[
             county.tracker_name
         ]
-    original_rows += _epd_original_rows(epd_facilities)
+    original_rows += _epd_original_rows(epd_facilities, epd_addresses)
     variables += [
         Variable(
             varname="dc_permitted_n",
@@ -238,18 +306,62 @@ def run(
                 f"county: {[m.jurisdiction for m in unresolved]}"
             )
         ordinance_flags = epicenter.regulations_to_ordinance_flags(hub.regulations)
+        stage_counts = epicenter.points_to_stage_counts(
+            hub.facility_points, verbose=verbose
+        )
         moratoria_ever = epicenter.moratoria_to_county_counts(hub.moratoria)
         moratoria_active = epicenter.moratoria_to_county_counts(
             hub.moratoria, active_on=date.today()
         )
         for county in counties:
             name = county.tracker_name
+            county_values[name].update(stage_counts[name])
             county_values[name]["dc_ordinance"] = ordinance_flags[name]
             county_values[name]["dc_moratorium_n"] = moratoria_ever[name]
             county_values[name]["dc_moratorium_active_n"] = moratoria_active[name]
             county_values[name]["dc_local_action"] = int(
                 ordinance_flags[name] == 1 or moratoria_ever[name] > 0
             )
+        _EPIC_STAGE_DOCS = {
+            "dc_mapped_n": (
+                "Count of data center facilities mapped in the county at any "
+                "development stage: operational, under construction, or planned.",
+                "One row per facility from the Hub's development symbol map; each "
+                "point's latitude and longitude resolved to a county via the Census "
+                "geocoder, then counted by county. Not taken from the regulations "
+                "choropleth, whose stage columns are 0/1 presence flags rather than "
+                "counts.",
+            ),
+            "dc_operational_n": (
+                "Count of data center facilities in the county that are operating.",
+                "As dc_mapped_n, restricted to points whose published stage is "
+                "'operational'.",
+            ),
+            "dc_construction_n": (
+                "Count of data center facilities in the county under construction.",
+                "As dc_mapped_n, restricted to points whose published stage is "
+                "'construction'.",
+            ),
+            "dc_planned_n": (
+                "Count of data center facilities in the county that are announced or "
+                "planned but not yet under construction.",
+                "As dc_mapped_n, restricted to points whose published stage is "
+                "'planned'.",
+            ),
+        }
+        variables += [
+            Variable(
+                varname=varname,
+                definition=definition,
+                units="facilities",
+                source=epicenter.ATTRIBUTION,
+                vintage="current Hub snapshot",
+                date_pulled=pulled_on,
+                original_name="Data Center Development in Georgia (per-facility symbol map)",
+                transformations=transformation,
+            )
+            for varname, (definition, transformation) in _EPIC_STAGE_DOCS.items()
+        ]
         variables += [
             Variable(
                 varname="dc_ordinance",
@@ -322,17 +434,60 @@ def run(
             ),
         ]
 
+    # --- Institutional (campus) data centers -------------------------------------
+    # Curated, not scraped: campus facilities appear in no statewide register. See
+    # scrapers/institutional.py for why they are counted and why they are kept as a
+    # separate variable rather than added to the EPIcenter count.
+    if verbose:
+        print("Loading institutional (campus) data center registry...")
+    inst_facilities = institutional.load_registry()
+    inst_counts = institutional.facilities_to_county_counts(inst_facilities)
+    for county in counties:
+        county_values[county.tracker_name]["dc_institutional_n"] = inst_counts[
+            county.tracker_name
+        ]
+    original_rows += _institutional_original_rows(inst_facilities)
+    variables.append(
+        Variable(
+            varname="dc_institutional_n",
+            definition=(
+                "Count of institutional data centers in the county: purpose-built "
+                "facilities housing university or college research computing at data "
+                "center scale. Counted separately because campus facilities appear in "
+                "neither the state air permit record nor the commercial development "
+                "map, and a county's full footprint is the union of this variable and "
+                "dc_mapped_n, not their sum."
+            ),
+            units="facilities",
+            source=institutional.SOURCE_NAME,
+            vintage="compiled from public announcements and trade coverage",
+            date_pulled=pulled_on,
+            original_name="Institutional announcements and trade press (per-facility URLs on the Original sheet)",
+            transformations=(
+                "Hand-compiled against a published inclusion rule; each facility "
+                "carries a public source URL, enforced in code, and is assigned to its "
+                "county via the reference table."
+            ),
+        )
+    )
+
     long_rows = build_long_rows(county_values)
+    transformed_rows = build_transformed_rows(county_values)
 
     dataset = Dataset(
         original_rows=original_rows,
         long_rows=long_rows,
+        transformed_rows=transformed_rows,
         variables=variables,
         notes=(
-            "Phase 5 working dataset. Facility stage from Georgia EPD air permits and "
-            "EPA FRS; local government response from the Georgia Tech EPIcenter "
-            "Ordinance Hub. EPIcenter-derived variables are attributed to Georgia Tech "
-            "and their redistribution terms are pending confirmation."
+            "Phase 5 draft dataset. Facility counts by stage from the Georgia Tech "
+            "EPIcenter development map; permitted facilities with dates from Georgia "
+            "EPD air permits; institutional (campus) facilities from a curated, "
+            "source-cited registry; local government response from the EPIcenter "
+            "Ordinance Hub. Facility variables are NOT additive: see the additivity "
+            "rules in docs/data_dictionary.md. EPIcenter-derived variables are "
+            "attributed to Georgia Tech and their redistribution terms are pending "
+            "confirmation."
         ),
     )
 

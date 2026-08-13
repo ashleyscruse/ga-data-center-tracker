@@ -9,6 +9,7 @@ from ga_data_center_tracker.delivery import (
     Dataset,
     Variable,
     build_long_rows,
+    build_transformed_rows,
     write_workbook,
 )
 
@@ -95,3 +96,45 @@ def test_empty_variables_rejected(tmp_path):
     ds.variables = []
     with pytest.raises(ValueError, match="no variables"):
         write_workbook(ds, tmp_path / "bad.xlsx")
+
+
+# --- build_transformed_rows ---------------------------------------------------
+
+def test_transformed_rows_cover_all_counties():
+    rows = build_transformed_rows({"Fulton County, Georgia": {"dc_mapped_n": 45}})
+    assert len(rows) == 1
+    assert rows[0]["county"] == "Fulton County, Georgia"
+
+
+def test_transformed_rows_follow_reference_county_order():
+    rows = build_transformed_rows(
+        {
+            "Fulton County, Georgia": {"dc_mapped_n": 45},
+            "Appling County, Georgia": {"dc_mapped_n": 1},
+        }
+    )
+    # Reference order is alphabetical by county name, not insertion order.
+    assert [r["county"] for r in rows] == [
+        "Appling County, Georgia",
+        "Fulton County, Georgia",
+    ]
+
+
+def test_transformed_rows_distinguish_missing_from_zero():
+    # A variable never computed for a county is blank; a computed zero is 0.
+    rows = build_transformed_rows(
+        {
+            "Appling County, Georgia": {"dc_mapped_n": 0, "dc_institutional_n": 0},
+            "Fulton County, Georgia": {"dc_mapped_n": 45},
+        }
+    )
+    by_county = {r["county"]: r for r in rows}
+    assert by_county["Appling County, Georgia"]["dc_institutional_n"] == 0
+    assert by_county["Fulton County, Georgia"]["dc_institutional_n"] == ""
+
+
+def test_transformed_columns_follow_variable_registration_order():
+    rows = build_transformed_rows(
+        {"Fulton County, Georgia": {"dc_permitted_n": 15, "dc_mapped_n": 45}}
+    )
+    assert list(rows[0].keys()) == ["county", "dc_permitted_n", "dc_mapped_n"]

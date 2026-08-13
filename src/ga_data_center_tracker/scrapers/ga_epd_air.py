@@ -67,6 +67,41 @@ DATA_CENTER_SIC_CODES = ("7374", "7376")
 # ``review_candidates`` pulls these for a human to adjudicate. See docs/methodology.md.
 REVIEW_SIC_CODES = ("7389", "4813")
 
+# Facilities under the review codes that have been adjudicated **in**, by AIRS number.
+#
+# Adjudicating one facility at a time, rather than promoting a whole SIC code, is what
+# lets a data center filed under a catch-all code be counted without also sweeping in
+# the sterilization plant and the airport that share it. Each entry records why, so the
+# decision is auditable and reversible rather than folklore.
+ADJUDICATED_INCLUSIONS = {
+    "097-00061": (
+        "Google, Inc. (Douglas County). Google's Douglas County data center, filed "
+        "under the 7389 catch-all. A data center under any definition; its exclusion "
+        "was a filing artifact, not a scope judgment."
+    ),
+    "121-00798": (
+        "AT&T Data Center (Fulton County). Named as a data center in the state's own "
+        "facility record."
+    ),
+    "097-00071": (
+        "Savvis Communications Corporation - AT1 (Douglas County). Savvis is a "
+        "colocation operator and AT1 is its Atlanta facility, not a carrier switch."
+    ),
+    "097-00063": (
+        "375 Riverside Pkwy LLC (Douglas County). A 250,000 sq ft, 27.5 MW colocation "
+        "facility in Lithia Springs, operated most recently as Evoque Atlanta."
+    ),
+}
+
+# Facilities under the review codes adjudicated **out**, recorded so the next person to
+# look does not re-litigate them. The remaining 4813 facilities are carrier switching
+# centers, which are the open scope question and are deliberately absent from both lists.
+ADJUDICATED_EXCLUSIONS = {
+    "063-00030": "Hartsfield-Jackson Atlanta International Airport. Misfiled SIC; an airport.",
+    "057-00066": "CyCan Industries, Inc. Manufacturing, not a data center.",
+    "067-00093": "Sterigenics U.S. LLC. Medical sterilization, not a data center.",
+}
+
 GEORGIA_STATE_FIPS = "13"
 
 _AIRS_RE = re.compile(r"^\d{3}-\d{5}$")
@@ -320,6 +355,39 @@ def facilities_to_county_counts(facilities: list[FacilityRecord]) -> dict[str, i
         if facility.county and facility.county in counts:
             counts[facility.county] += 1
     return counts
+
+
+def scrape_data_center_permits(
+    *, sleep: float = 0.5, verbose: bool = False
+) -> list[PermitRecord]:
+    """Every permit record this dataset counts as a data center.
+
+    Two passes, because Georgia EPD's filing is not clean enough for one:
+
+    1. The codes that carry data centers wholesale (``DATA_CENTER_SIC_CODES``).
+    2. The ambiguous codes (``REVIEW_SIC_CODES``), filtered to the specific facilities
+       in ``ADJUDICATED_INCLUSIONS``.
+
+    The second pass is the reason Google's Douglas County data center is in the count.
+    It sits under 7389, a catch-all shared with a sterilization plant, so the code
+    cannot be swept in and the facility has to be named.
+    """
+    permits = scrape_permits(sic_codes=DATA_CENTER_SIC_CODES, sleep=sleep, verbose=verbose)
+
+    if verbose:
+        print(f"Checking review SIC codes {REVIEW_SIC_CODES} for adjudicated facilities...")
+    review = scrape_permits(sic_codes=REVIEW_SIC_CODES, sleep=sleep, verbose=False)
+    adjudicated = [p for p in review if p.airs_number in ADJUDICATED_INCLUSIONS]
+    permits += adjudicated
+
+    if verbose:
+        found = sorted({p.airs_number for p in adjudicated})
+        print(f"  {len(found)} of {len(ADJUDICATED_INCLUSIONS)} adjudicated facilities found: {found}")
+        missing = set(ADJUDICATED_INCLUSIONS) - set(found)
+        if missing:
+            # Loud, because a silently vanished facility would quietly drop the count.
+            print(f"  WARNING: adjudicated facilities not found in the permit record: {sorted(missing)}")
+    return permits
 
 
 def review_candidates(*, sleep: float = 0.5, verbose: bool = False) -> list[FacilityRecord]:
