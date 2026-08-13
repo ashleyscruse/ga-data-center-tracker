@@ -268,7 +268,7 @@ def main() -> None:
         description="Find candidate institutional data centers from NSF award records."
     )
     parser.add_argument(
-        "--out", type=Path, default=Path("docs/institutional-candidates.txt")
+        "--out", type=Path, default=Path("data/interim/institutional-candidates.txt")
     )
     args = parser.parse_args()
 

@@ -324,7 +324,7 @@ def main() -> None:
         description="Find where each target county publishes commission and zoning minutes."
     )
     parser.add_argument("--workbook", type=Path, default=Path("data/processed/ga_data_centers.xlsx"))
-    parser.add_argument("--out", type=Path, default=Path("docs/minutes-recon.txt"))
+    parser.add_argument("--out", type=Path, default=Path("data/interim/minutes-recon.txt"))
     args = parser.parse_args()
 
     counties = target_counties(args.workbook)

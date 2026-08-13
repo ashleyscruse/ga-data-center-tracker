@@ -35,7 +35,7 @@ Each source below lists its status, what it gives us, how it is accessed, the co
 - **County match:** validated against the county reference table; an entry whose county does not resolve to a Georgia county fails the build.
 - **Not additive to the mapped count.** See the additivity rules in [data_dictionary.md](data_dictionary.md).
 - **Cadence:** reviewed at each refresh; new facilities added as public documentation appears.
-- **Candidate discovery:** `scrapers/institutional_discovery.py` searches the NSF Award Search API for MRI and CC* awards to Georgia institutions whose titles indicate computing hardware, and writes a reviewable worklist to `docs/institutional-candidates.txt`. Currently 5 institutions, 2 already in the registry. Nothing is promoted automatically: an award buys a cluster, it does not prove a building.
+- **Candidate discovery:** `scrapers/institutional_discovery.py` searches the NSF Award Search API for MRI and CC* awards to Georgia institutions whose titles indicate computing hardware, and writes a reviewable worklist to `data/interim/institutional-candidates.txt`. Currently 5 institutions, 2 already in the registry. Nothing is promoted automatically: an award buys a cluster, it does not prove a building.
 
 ### EPA Facility Registry Service (FRS)
 - **Status:** built, **currently returning 0 records**. The scraper runs without error but the NAICS 518210 query is not yielding Georgia facilities it previously returned. Under investigation; it is a cross-check rather than a primary count, so it does not block delivery, and `--skip-frs` bypasses it.
@@ -70,7 +70,7 @@ Each source below lists its status, what it gives us, how it is accessed, the co
 - **Status:** planned. **Recon complete**; the scrape itself is not built.
 - **What:** where data center rezonings, special-use permits, and hearings are decided, and where residents speak on the record. The primary source for documented citizen support and concern, which is the half of the community strand the ordinance data cannot supply.
 - **Scope decision:** 37 counties, not 159. The target set is the union of counties with a data center and counties with a recorded ordinance or moratorium. A county with neither has nothing for this strand to find.
-- **Recon:** `scrapers/minutes_recon.py` probes each target county's website and fingerprints its agenda vendor by the domains it serves assets from. Output: `docs/minutes-recon.txt`.
+- **Recon:** `scrapers/minutes_recon.py` probes each target county's website and fingerprints its agenda vendor by the domains it serves assets from. Output: `data/interim/minutes-recon.txt`.
 - **Why recon first:** Georgia counties do not each roll their own agenda system, they buy one of about a dozen. Mapping county to vendor turns 37 bespoke scrapers into a handful of adapters, and tells you in advance how many counties each adapter buys.
 - **Current result:** 18 of 37 counties fingerprinted, 18 sites found without a recognized vendor, 1 site unresolved. **CivicPlus (11 counties) and CivicClerk (6) are the two adapters worth writing first**, covering 14 distinct counties between them. Granicus (3), Legistar (2), IQM2 (2), and NovusAGENDA (1) follow.
 - **Known limit:** the 18 unfingerprinted counties are likely PDF-only or bespoke, which is the slow tail. They are named in the recon report rather than hidden in a percentage.

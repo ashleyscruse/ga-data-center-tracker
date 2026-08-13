@@ -94,7 +94,7 @@ To find facilities you do not already know about, run the discovery pass:
 python -m ga_data_center_tracker.scrapers.institutional_discovery
 ```
 
-It searches NSF Award Search for MRI and CC* awards to Georgia institutions indicating computing hardware, and writes `docs/institutional-candidates.txt`. Institutions already in the registry are marked. **Review each candidate before adding it**: an award proves an institution bought a cluster, not that it houses one. Confirm a physical facility, its county, and a public source URL.
+It searches NSF Award Search for MRI and CC* awards to Georgia institutions indicating computing hardware, and writes `data/interim/institutional-candidates.txt`. Institutions already in the registry are marked. **Review each candidate before adding it**: an award proves an institution bought a cluster, not that it houses one. Confirm a physical facility, its county, and a public source URL.
 
 Before adding, check the inclusion rule in [methodology.md](methodology.md): a purpose-built facility housing institutional computing at data center scale. A departmental server closet does not qualify.
 
@@ -104,9 +104,13 @@ Before adding, check the inclusion rule in [methodology.md](methodology.md): a p
 python -m ga_data_center_tracker.scrapers.minutes_recon
 ```
 
-Probes each target county's website and fingerprints its agenda vendor, writing `docs/minutes-recon.txt`. Re-run it when the target county set changes, since counties change vendors and the set grows as facilities appear.
+Probes each target county's website and fingerprints its agenda vendor, writing `data/interim/minutes-recon.txt`. Re-run it when the target county set changes, since counties change vendors and the set grows as facilities appear.
 
 Two tables in the module need hand-maintenance when a probe fails: `SITE_OVERRIDES` for counties whose hostname does not follow the usual patterns (consolidated city-county governments, mostly), and `PLATFORM_MARKERS` when a new vendor shows up. **Fingerprints must match vendor domains, never bare words**: an earlier version matched the substring "escribe", which is contained in "describe", and reported a platform on any county whose site used that ordinary word.
+
+Both discovery passes write to `data/interim/`, which is gitignored. They are working
+notes for whoever maintains this, not deliverables, and they name institutions and
+counties that have not been confirmed yet.
 
 ## What lives where
 

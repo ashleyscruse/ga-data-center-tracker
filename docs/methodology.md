@@ -140,7 +140,7 @@ A hand-maintained list contains what its author happened to know, which is not a
 
 **The insight is that there is no register of campus data centers, but there is a register of the money that builds them.** Two NSF programs buy campus computing hardware, and both title their awards predictably: **MRI** (Major Research Instrumentation), which funds instruments of every kind and so needs its computing awards separated from its mass spectrometers, and **CC\*** (Campus Cyberinfrastructure), which exists specifically to build campus cyberinfrastructure and is therefore the higher-signal program. Every award carries an institution, a city, a date, an amount, and a stable public URL, which is exactly the evidence the citation rule demands.
 
-The discovery pass currently surfaces **five Georgia institutions**, two of which are already in the registry. Its output is `docs/institutional-candidates.txt`.
+The discovery pass currently surfaces **five Georgia institutions**, two of which are already in the registry. Its output is `data/interim/institutional-candidates.txt`.
 
 **It emits candidates, and nothing is promoted automatically.** An award to buy a cluster is not evidence of a data center. The machine may sit in another institution's building, in a converted room that does not meet the inclusion rule, or in the cloud. Emory is the cautionary case: its HPC cluster ran inside Georgia Tech's Rich Computer Center and its current platform is cloud-hosted, so an institution can have substantial research computing and no Georgia facility at all. Collecting the evidence is automatable; deciding what it means is not.
 
