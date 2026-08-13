@@ -1,0 +1,53 @@
+Institutional data center candidates, Georgia
+==========================================================================
+
+Source: NSF Award Search, MRI and CC* awards to Georgia institutions whose
+titles indicate computing hardware. An award is evidence that an institution
+bought a cluster. It is NOT evidence that the institution houses it: the
+machine may sit in another institution's building, or in the cloud.
+
+REVIEW EACH before adding to institutional.REGISTRY. Confirm (a) a physical
+facility on that campus, (b) the county it sits in, (c) a public source URL.
+
+5 institutions with at least one matching award.
+
+--------------------------------------------------------------------------
+Georgia Institute of Technology  [in registry]
+  ATLANTA  ·  2 award(s)  ·  $4,099,200 obligated  ·  latest 2019
+
+    06/10/2019  CC* Compute: Integrating Georgia Tech into the Open Science Grid for Multi-Messenger Astrophysics
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=1925541   PI: Mehmet Belgin
+    08/24/2018  MRI: Acquisition of an HPC System for Data-Driven Discovery in Computational Astrophysics, Biology, Chemistry, and Materials Science
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=1828187   PI: Srinivas Aluru
+
+--------------------------------------------------------------------------
+Georgia State University
+  ATLANTA  ·  2 award(s)  ·  $1,522,417 obligated  ·  latest 2024
+
+    11/13/2024  Research Infrastructure: CC* Compute-Campus: Pioneering Research-Oriented Flexible Cyberinfrastructure (PROFLEX-CI)
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=2430193   PI: Neranjan Edirisinghe Pathirannehe
+    09/17/2019  MRI Acquisition: Advanced Computing Infrastructure Driving long-tail Sciences
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=1920024   PI: Neranjan Edirisinghe Pathirannehe
+
+--------------------------------------------------------------------------
+Augusta State University
+  augusta  ·  2 award(s)  ·  $177,100 obligated  ·  latest 2009
+
+    09/02/2009  MRI: Acquisition of a High Performance Computing System for Undergraduate Physics Research
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=0922362   PI: Trinanjan Datta
+    09/21/2007  MRI:   Acquisition of a High Performance Computing System for Undergraduate Geoscience Research
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=0751918   PI: Christian Poppeliers
+
+--------------------------------------------------------------------------
+University of Georgia  [in registry]
+  ATHENS  ·  1 award(s)  ·  $796,822 obligated  ·  latest 2008
+
+    08/17/2008  MRI: Acquisition of a Computer Cluster for Bioinformatics Research at UGA
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=0821263   PI: Ying Xu
+
+--------------------------------------------------------------------------
+Kennesaw State University
+  KENNESAW  ·  1 award(s)  ·  $500,000 obligated  ·  latest 2022
+
+    08/26/2022  CC* Data Storage: High Volume Data Storage Infrastructure for Scientific Research and Education at Kennesaw State University Shared as Open Science Data Federation Data Origin
+      https://www.nsf.gov/awardsearch/showAward?AWD_ID=2232816   PI: Ramazan Aygun

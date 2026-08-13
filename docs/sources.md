@@ -12,17 +12,38 @@ Each source below lists its status, what it gives us, how it is accessed, the co
 - **Access:** `https://permitsearch.gaepd.org/`, searched by SIC code. The site is an ASP.NET WebForms application, so the scraper holds a session and pages through the results grid via form postbacks.
 - **Signal captured:** permitted facilities, reaching back to the construction-permitting stage. Each record carries an issuance date, which makes this the only current source that supports a timeline.
 - **County match:** native and exact. The AIRS number `CCC-NNNNN` encodes the county's 3-digit FIPS code, so prefixing `13` yields the full county FIPS with no geocoding step and no name matching.
-- **Current yield:** 88 permit records resolving to 34 facilities across 11 counties, every one county-resolved. Fulton (15) and Douglas (7) lead.
-- **Which SIC codes:** 7374 (Data Processing and Preparation) and 7376 (Computer Facilities Management Services). Both are searched, because Georgia EPD files data centers under either. Two further codes, 7389 and 4813, contain some data centers mixed with unrelated industry and are surfaced for manual review rather than counted.
+- **Current yield:** 107 permit records resolving to 38 facilities across 11 counties, every one county-resolved. Fulton (16) and Douglas (10) lead.
+- **Which SIC codes:** 7374 (Data Processing and Preparation) and 7376 (Computer Facilities Management Services) are searched wholesale. Two further codes, 7389 and 4813, mix data centers with unrelated industry, so they are searched and then filtered to four individually adjudicated facilities: Google's Douglas County data center, AT&T Data Center, Savvis AT1, and 375 Riverside Pkwy. The remaining 4813 facilities are carrier switching centers, the open scope question.
 - **Cadence:** updated as EPD issues permits; re-pull at each refresh.
+- **Addresses come from the permit PDFs, not the grid.** The search results carry no address. Every permit row links to its permit document, whose first page holds a `Facility Address:` block. `scrapers/epd_permit_docs.py` downloads one PDF per facility, parses that block, and caches both the PDFs and the parsed result. **34 of 38 facilities resolved.** The 4 that did not: one permit is a scanned image with no text layer, and three facilities publish no permit PDF at all.
+- **The printed county is an independent check.** The permit spells the county out in words; the dataset derives it from the AIRS number's digits. Those come from different parts of the record, and all 34 agree.
+
+### Georgia Tech EPIcenter development map
+- **Status:** live. The **primary facility-coverage source**: it reaches 123 facilities across 30 counties, against the permit record's 38 across 11.
+- **What:** one row per facility, published as a latitude and longitude with a development stage (operational, construction, planned), on the Ordinance Hub's symbol map.
+- **Access:** Datawrapper chart dataset, discovered at run time from the Hub page. Same fetch as the ordinance and moratoria charts below.
+- **Signal captured:** facilities at every stage, including proposals that have not applied for any permit.
+- **County match:** each point reverse-geocoded to a county FIPS through the U.S. Census geocoder, cached on disk. All 123 resolved; none required manual review.
+- **Do not read stage counts off the regulations choropleth.** Its `Operational` / `Under construction` / `Planned` columns are 0/1 presence flags, not counts. Using them reports 27 facilities statewide instead of 123.
+- **Terms:** Georgia Tech's compiled research product. Attributed by name in every derived variable; formal redistribution terms requested and not yet confirmed. `--skip-epicenter` rebuilds without it.
+
+### Institutional (campus) data center registry
+- **Status:** live, and deliberately a floor. 3 facilities across 2 counties.
+- **What:** university and college data centers, which no other source in this pipeline can see. Not in the EPD permit record (campus backup generation usually falls below the threshold), not on the commercial development map, not in commercial catalogs (which track leasable colocation space).
+- **Access:** curated by hand from institutional announcements and trade coverage. There is no statewide register to scrape.
+- **The one hard rule:** every record carries a public `source_url`, enforced in code. The build raises on a record without one, so an unsourced facility cannot ship. The URLs travel on the `Original` sheet.
+- **County match:** validated against the county reference table; an entry whose county does not resolve to a Georgia county fails the build.
+- **Not additive to the mapped count.** See the additivity rules in [data_dictionary.md](data_dictionary.md).
+- **Cadence:** reviewed at each refresh; new facilities added as public documentation appears.
+- **Candidate discovery:** `scrapers/institutional_discovery.py` searches the NSF Award Search API for MRI and CC* awards to Georgia institutions whose titles indicate computing hardware, and writes a reviewable worklist to `docs/institutional-candidates.txt`. Currently 5 institutions, 2 already in the registry. Nothing is promoted automatically: an award buys a cluster, it does not prove a building.
 
 ### EPA Facility Registry Service (FRS)
-- **Status:** live. Retained as an independent cross-check on the EPD permit record, not as the primary count.
+- **Status:** built, **currently returning 0 records**. The scraper runs without error but the NAICS 518210 query is not yielding Georgia facilities it previously returned. Under investigation; it is a cross-check rather than a primary count, so it does not block delivery, and `--skip-frs` bypasses it.
 - **What:** federal registry of facilities regulated under environmental programs. Data centers appear because their backup-generator air permits register them under NAICS 518210.
 - **Access:** EPA Envirofacts `efservice` API, queried as three single-table lookups joined in Python (`FRS_NAICS` for NAICS 518210, then `FRS_PROGRAM_FACILITY` to get registry ID and state, then `FRS_FACILITY_SITE` for county and address). The single joined query is avoided because it hits a server-side bug.
 - **Signal captured:** operational and permitted facilities.
 - **County match:** by the FIPS code the site record carries, validated against the county reference table; falls back to a normalized county-name match.
-- **Current yield:** 22 facilities across 10 counties (Fulton 10), including Google, Amazon, Vantage, QTS.
+- **Previous yield:** 22 facilities across 10 counties (Fulton 10), including Google, Amazon, Vantage, QTS. Not reproduced in the current run.
 - **Cadence:** updated continuously upstream; re-pull at each refresh.
 
 ### Georgia Power Interconnection Queue (OASIS)
@@ -46,10 +67,13 @@ Each source below lists its status, what it gives us, how it is accessed, the co
 ## Community engagement and public sentiment
 
 ### County commission and zoning board meeting minutes
-- **Status:** planned.
-- **What:** where data center rezonings, special-use permits, and hearings are decided. Primary source for documented community support and concern.
-- **Access:** county websites and agenda portals (Granicus, CivicClerk, PDF archives); scrape or download.
-- **Signal captured:** community engagement; siting decisions.
+- **Status:** planned. **Recon complete**; the scrape itself is not built.
+- **What:** where data center rezonings, special-use permits, and hearings are decided, and where residents speak on the record. The primary source for documented citizen support and concern, which is the half of the community strand the ordinance data cannot supply.
+- **Scope decision:** 37 counties, not 159. The target set is the union of counties with a data center and counties with a recorded ordinance or moratorium. A county with neither has nothing for this strand to find.
+- **Recon:** `scrapers/minutes_recon.py` probes each target county's website and fingerprints its agenda vendor by the domains it serves assets from. Output: `docs/minutes-recon.txt`.
+- **Why recon first:** Georgia counties do not each roll their own agenda system, they buy one of about a dozen. Mapping county to vendor turns 37 bespoke scrapers into a handful of adapters, and tells you in advance how many counties each adapter buys.
+- **Current result:** 18 of 37 counties fingerprinted, 18 sites found without a recognized vendor, 1 site unresolved. **CivicPlus (11 counties) and CivicClerk (6) are the two adapters worth writing first**, covering 14 distinct counties between them. Granicus (3), Legistar (2), IQM2 (2), and NovusAGENDA (1) follow.
+- **Known limit:** the 18 unfingerprinted counties are likely PDF-only or bespoke, which is the slow tail. They are named in the recon report rather than hidden in a percentage.
 
 ### Data center ordinances and moratoria (Georgia Tech EPIcenter Ordinance Hub)
 - **Status:** live. First source in the community engagement strand.

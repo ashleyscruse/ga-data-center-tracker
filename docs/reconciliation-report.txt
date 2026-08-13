@@ -2,7 +2,7 @@ Cross-source reconciliation, Georgia data centers
 ================================================================
 
 Statewide totals
-  GA EPD air permits (permitted)       34
+  GA EPD air permits (permitted)       38
   EPA FRS (federally registered)        0
   EPIcenter mapped, all stages        123
     of which operational               73
@@ -14,8 +14,8 @@ Statewide totals
 
 County detail (sources disagree by design; see methodology)
   county                      EPD  FRS  EPIc  oper const  plan
-  Fulton                       15    0    45    35     4     6
-  Douglas                       7    0    16     9     4     3
+  Fulton                       16    0    45    35     4     6
+  Douglas                      10    0    16     9     4     3
   Gwinnett                      2    0     6     6     0     0
   Cobb                          0    0     6     5     1     0
   Whitfield                     1    0     5     4     1     0

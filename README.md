@@ -17,6 +17,27 @@ This project pulls that picture together.
 
 The result is a county-level view spanning all 159 Georgia counties, designed to feed into the [Drawdown Georgia Solutions Tracker](https://drawdownga.gatech.edu/) and support comparative analysis across the state.
 
+## What's In The Dataset
+
+One row per Georgia county, 159 counties, joined on county FIPS. Eleven indicators built from four public sources.
+
+| Indicator | What it counts |
+|---|---|
+| `dc_mapped_n` | Data center facilities in the county at any development stage |
+| `dc_operational_n`, `dc_construction_n`, `dc_planned_n` | Those facilities split by stage |
+| `dc_permitted_n` | Facilities holding a Georgia state air permit, the only dated measure |
+| `dc_permitted_recent_n` | Of those, first permitted in 2023 or later |
+| `dc_institutional_n` | University and college data centers |
+| `dc_ordinance`, `dc_moratorium_n`, `dc_moratorium_active_n`, `dc_local_action` | How local government has formally responded |
+
+**The counts are deliberately not merged into a single number.** Each source sees a different slice of Georgia's data centers, and no source sees all of them. Merging would require matching facilities across sources by identity, which the available data does not support. The dataset reports each source separately, documents what each one can and cannot see, and publishes the county-by-county disagreement between them rather than smoothing it over.
+
+Full definitions are in the data dictionary; the reasoning behind every choice, including what counts as a data center, is in the methodology.
+
+## How It's Built
+
+A reproducible Python pipeline. One command pulls every source, resolves each facility to a county, and writes the delivered spreadsheet. The county reference table is built from the U.S. Census Bureau's national county file and refuses to load unless it finds exactly 159 Georgia counties. Facility records that cannot be resolved to a county are flagged for review rather than guessed into one.
+
 ## Why It Matters
 
 Data centers are critical infrastructure for the digital economy, but their footprint is significant.
