@@ -6,6 +6,8 @@ Georgia is in the middle of a data center boom. New facilities are being propose
 
 This project pulls that picture together.
 
+**Read the results:** [Counting Georgia's Data Centers, County by County](https://ashleyscruse.github.io/ga-data-center-tracker/), a plain-language summary with county maps and charts.
+
 ## What This Project Tracks
 
 | Dimension | What We're Capturing |
