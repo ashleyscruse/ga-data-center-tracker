@@ -1,6 +1,6 @@
 # Methodology
 
-How the Georgia Data Center Tracker dataset is built. This document is delivered alongside the dataset and is written so the work can be understood, trusted, and reproduced. It is a living document; sections marked _(planned)_ firm up as each source and indicator is built. For a code-level walkthrough, see [code-walkthrough.md](code-walkthrough.md).
+How the Georgia Data Center Tracker dataset is built. This document is delivered alongside the dataset and is written so the work can be understood, trusted, and reproduced. Sections marked _(not built in Phase 5)_ describe work that was scoped but not completed; they are kept so the next phase starts from a documented design. For a code-level walkthrough, see [code-walkthrough.md](code-walkthrough.md).
 
 ## Scope
 
@@ -44,7 +44,7 @@ Searching 7374 alone understated the count by roughly a quarter, which is why th
 
 **Missing Google was a miss, not a scope decision**, and it is the same class of error as the SIC 7374 gap: a data center that exists, holds a current state permit, and was invisible because of how the state filed it. It was found the same way, by inspecting the full permit database rather than trusting a classification.
 
-**The four remaining 4813 facilities are carrier switching centers** (Bellsouth Midtown Two, AT&T Georgia, Sprint Atlanta Switch, and two AT&T Mobility sites). They sit on neither list. Whether a telecom switch counts as a data center is a scope question rather than a data question, and it is recorded here as open pending Georgia Tech's call.
+**The four remaining 4813 facilities are carrier switching centers** (Bellsouth Midtown Two, AT&T Georgia, Sprint Atlanta Switch, and two AT&T Mobility sites). They sit on neither list. Whether a telecom switch counts as a data center is a scope question rather than a data question. For Phase 5 they are not counted, and the decision is reversible if Georgia Tech's convention differs.
 
 Two encodings in the published record carry the fields the dataset needs, which is what makes this source unusually clean:
 
@@ -71,7 +71,7 @@ EPA's single joined query hits a server-side bug, so the scraper joins three sin
 
 Facilities are then deduplicated by registry ID and matched to a county by FIPS, falling back to a normalized county-name match. An optimization skips the per-ID lookup for records that came from a non-Georgia state-specific program, since those cannot be in Georgia. The fetch retries on EPA's intermittent server errors and logs-and-skips any persistent failure, so a run can be reconciled afterward by re-checking the skipped IDs.
 
-**Current yield:** 22 deduplicated operational facilities across 10 counties (Fulton leads with 10), including Google, Amazon, Vantage, and QTS.
+**Yield:** 22 deduplicated operational facilities across 10 counties (Fulton leads with 10), including Google, Amazon, Vantage, and QTS, as of July 2026. Since then the query has returned 0 records. The scraper runs without error, so the fault is in the query against EPA's current schema rather than in the code. No delivered variable depends on FRS: it is a cross-check, not a primary count, and the delivered dataset is built with `--skip-frs` until the query is repaired.
 
 **Coverage limit (stated plainly):** FRS only contains facilities that triggered an environmental program, so it captures permitted and operational data centers, not proposals, and not facilities that never filed. FRS is therefore a floor on operational facilities, cross-checked against other sources, not a complete census. A planned broadening of the search by facility name will recover some facilities that EPA classified under a different industry code.
 
@@ -130,9 +130,9 @@ The dataset therefore reports the **conservative** union, `max(dc_mapped_n, dc_p
 | Every permitted facility is also on EPIcenter's map (the published rule) | **127** |
 | No overlap between the two sources | 163 |
 
-**So the defensible statement is "at least 127 facilities," not "127 facilities."** The 36-facility spread is the cost of not being able to match by identity, and closing it is what the coordinate-matching work scheduled before final delivery is for. Any headline figure drawn from this dataset should carry the "at least."
+**So the defensible statement is "at least 127 facilities," not "127 facilities."** The 36-facility spread is the cost of not being able to match by identity. Closing it requires coordinate-level matching, which was not completed in Phase 5. Any headline figure drawn from this dataset should carry the "at least."
 
-**Why the institutional count is not added to `dc_mapped_n`.** Whether EPIcenter's development map already includes any of these three facilities has not been verified facility by facility, and EPIcenter publishes bare coordinates with no names, so it cannot be verified by identity. Summing the two would risk double-counting Fulton County. `dc_institutional_n` is therefore published as its own variable, and **a county's full footprint is the union of `dc_mapped_n` and `dc_institutional_n`, not their sum.** Resolving the overlap by coordinate is scheduled before final delivery.
+**Why the institutional count is not added to `dc_mapped_n`.** Whether EPIcenter's development map already includes any of these three facilities has not been verified facility by facility, and EPIcenter publishes bare coordinates with no names, so it cannot be verified by identity. Summing the two would risk double-counting Fulton County. `dc_institutional_n` is therefore published as its own variable, and **a county's full footprint is the union of `dc_mapped_n` and `dc_institutional_n`, not their sum.** Resolving the overlap by coordinate was not completed in Phase 5 and remains open.
 
 #### Finding candidates systematically, rather than from memory
 
@@ -156,13 +156,15 @@ Holding all three is the correct outcome, not a failed run: each is now a named 
 
 **Coverage limit (stated plainly):** this is a floor, and a low one. It contains the institutional facilities that are publicly documented well enough to cite, not every institutional facility in Georgia. Facilities known to exist but lacking a public, citable source are deliberately absent rather than entered on private knowledge. The discovery pass above bounds how much is missing at the state's research-active institutions; it says nothing about teaching institutions that never sought NSF instrumentation funding. Corporate enterprise data centers, invisible for the same structural reasons, are a further known gap and are not yet addressed.
 
-### County building permits: construction _(planned, source not yet built)_
+### County building permits: construction _(not built in Phase 5)_
 
-Per-county permit records identify facilities under construction. Coverage is uneven across the 159 counties: some publish searchable portals, others require open-records requests. The build prioritizes high-activity counties and documents which counties are covered by which method. The parsing approach and the open-records process are documented here as the recon pass completes.
+Per-county permit records identify facilities under construction. Coverage is uneven across the 159 counties: some publish searchable portals, others require open-records requests. The intended approach prioritizes high-activity counties and documents which counties are covered by which method. This source was not built in Phase 5; construction-stage counts come from EPIcenter's development map instead.
 
-### Remaining community engagement sources: citizen support and concerns _(planned, sources not yet built)_
+### Remaining community engagement sources: citizen support and concerns _(not built in Phase 5)_
 
-Ordinances and moratoria (above) capture what local *government* did. Commission and zoning minutes, local news, and public comment records capture what residents said, and are still to be built. Where feasible these are counted and classified by direction (support versus concern). The coding scheme is documented here before it is applied, since a sentiment classification is a research judgment in a way that counting ordinances is not.
+Ordinances and moratoria (above) capture what local *government* did. Commission and zoning minutes, local news, and public comment records capture what residents said. Where feasible these would be counted and classified by direction (support versus concern), with the coding scheme documented before it is applied, since a sentiment classification is a research judgment in a way that counting ordinances is not.
+
+The recon pass for minutes is complete. `scrapers/minutes_recon.py` targets the 37 counties with a data center or a recorded ordinance or moratorium and locates where each publishes agendas and minutes: 18 on an identified agenda platform, 18 with a site found but the platform not yet fingerprinted, and 1 needing a manual lookup. The adapters that would extract and code the minutes were not built, so the delivered community strand measures local-government action, not resident voice. The recon output is where the next phase picks up.
 
 ## Cross-source reconciliation
 
@@ -172,7 +174,7 @@ EPIcenter publishes its facilities as bare coordinates with a development stage,
 
 **This is the honest limit of the method.** A county where EPD finds 1 and EPIcenter finds 4 tells you three more facilities exist there at some stage. It does not establish that EPD's one is among EPIcenter's four. Facility-level matching would require names, which EPIcenter does not publish.
 
-**Statewide, as of this pull:** EPD air permits reach 34 facilities. EPIcenter maps 123, of which 73 are operational, 16 under construction, and 34 planned. Thirty-three counties show activity in at least one source, and the union across all sources is 127 facilities: EPIcenter's 123, the 2 institutional facilities not already in the permit record, and the 2 permitted facilities in Forsyth and Jackson that EPIcenter's map does not show.
+**Statewide, as of this pull:** EPD air permits reach 38 facilities. EPIcenter maps 123, of which 73 are operational, 16 under construction, and 34 planned. Thirty-three counties show activity in at least one source, and the union across all sources is 127 facilities: EPIcenter's 123, the 2 institutional facilities not already in the permit record, and the 2 permitted facilities in Forsyth and Jackson that EPIcenter's map does not show.
 
 The 34 planned facilities explain part of the gap, since a proposal would not hold a permit yet. The 73 operational ones do not: an operating data center with backup generators should hold an air permit. Three explanations remain open, and the reconciliation is what will distinguish them:
 
@@ -180,13 +182,13 @@ The 34 planned facilities explain part of the gap, since a proposal would not ho
 2. EPIcenter counts individual buildings where EPD permits a whole campus, so the two count different units.
 3. Some facilities fall below the generator thresholds that trigger permitting.
 
-Resolving this is the next scheduled work, because it determines whether the two counts can be reconciled at all or are measuring different things.
+The first has been tested and accounts for only part of the gap: widening the search beyond SIC 7374 raised the permitted count from 26 to 38 facilities, and the gap persists. The second and third were not resolved in Phase 5. They determine whether the two counts can be reconciled at all or are measuring different things, and they remain the central open question for the facility strand.
 
 **The comparison runs both directions.** Twenty-one counties have EPIcenter-mapped facilities that the permit record does not reach. Two counties, Forsyth and Jackson, have facilities holding current Georgia EPD air permits that do not appear on EPIcenter's map. The second direction is the more informative one: a permitted facility is a verified facility, so those are corrections flowing back to the Hub rather than gaps in this dataset.
 
 ## Deduplication
 
-A single physical facility can appear in multiple sources. Records are matched and counted once. Within FRS, deduplication is by registry ID (implemented). Cross-source deduplication, for example an interconnection-queue proposal that later appears in FRS as operational, resolves to one facility record tagged by its furthest stage; this is documented here as multi-source integration is built _(planned)_.
+A single physical facility can appear in multiple sources. Records are matched and counted once. Within EPD, permits collapse to one facility by AIRS number; within FRS, by registry ID. Across sources, deduplication is limited by what each source publishes. EPD and the institutional registry are matched by street address, which is how the Coda double count was found and removed. EPIcenter publishes no names or addresses, so it cannot be deduplicated against the other sources by identity and is compared county by county instead.
 
 ## Indicators: selection, normalization, and composite weighting
 
@@ -237,7 +239,7 @@ The weights are deliberately simple and evenly spaced rather than estimated. The
 
 ### What ships when
 
-The base variables are the August 15 draft. The composites enter the final dataset once the resident-sentiment variables exist, because a community-response index built only on ordinances would measure local government and be named for residents. Publishing that composite early would be the single most misleading thing this dataset could do.
+The base variables shipped in the August 15 draft and in the final delivery. The composites did not ship in Phase 5, because the resident-sentiment variables they require were not built, and a community-response index built only on ordinances would measure local government and be named for residents. Publishing that composite would be the single most misleading thing this dataset could do. The design above stands for whichever phase builds the sentiment variables.
 
 **Open decisions for Georgia Tech**, flagged rather than resolved unilaterally: whether the Tracker prefers absolute or per-capita normalization for cross-measure comparability, and whether the stage weights above should match any convention already used in other Tracker measures.
 
