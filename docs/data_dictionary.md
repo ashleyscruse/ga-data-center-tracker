@@ -2,7 +2,7 @@
 
 Definitions for every field in the county-level dataset. One row per Georgia county (159 total). For how each field is produced, see [methodology.md](methodology.md); for the workbook structure, see [output_format.md](output_format.md). For what does and does not count as a data center, see the "What counts as a data center" section of the methodology.
 
-**Status: draft v2.** Eleven variables are live. The `Status` column marks what is in the delivered workbook today versus what is planned; planned fields appear here so the target schema is visible, and activate as each source is built. The `Codebook` and `Data Description` sheets in each delivered workbook are generated from the pipeline, not hand-maintained, so they cannot drift from the shipped data.
+**Status: draft v2.** Twelve variables are live. The `Status` column marks what is in the delivered workbook today versus what is planned; planned fields appear here so the target schema is visible, and activate as each source is built. The `Codebook` and `Data Description` sheets in each delivered workbook are generated from the pipeline, not hand-maintained, so they cannot drift from the shipped data.
 
 ## Identity
 
@@ -22,6 +22,7 @@ Definitions for every field in the county-level dataset. One row per Georgia cou
 | `dc_permitted_n` | integer | Facilities holding a Georgia EPD air permit, cumulative across all issuance years. The most conservative count, and the only dated one. | GA EPD air permits (SIC 7374, 7376) | live |
 | `dc_permitted_recent_n` | integer | Facilities whose **first** EPD air permit was issued in 2023 or later. Separates the current buildout from pre-existing stock. | GA EPD air permits | live |
 | `dc_institutional_n` | integer | Institutional (university and college) data centers in the county. Counted separately; see the note below. | Curated institutional registry | live |
+| `dc_announced_n` | integer | Publicly announced data centers that appear in no other source: no air permit, not mapped, not institutional. Removed from the registry once another source picks them up. | Curated announced registry | live |
 | `dc_frs_n` | integer | Facilities listed in the EPA Facility Registry Service under NAICS 518210. An independent federal cross-check. | EPA FRS | built, currently returning 0 |
 | `proposed_load_mw` | float | Proposed new electrical load (MW). | Not available at county level; see methodology | dropped |
 
@@ -29,6 +30,7 @@ Definitions for every field in the county-level dataset. One row per Georgia cou
 
 - `dc_permitted_n` is a **subset relationship, not a separate population**: a permitted facility is also, in principle, a mapped facility. Do not add it to `dc_mapped_n`.
 - `dc_institutional_n` is a **union, not a sum**: campus facilities are invisible to the other sources, but whether EPIcenter's map already includes any of them has not been verified facility by facility. A county's full footprint is the union of `dc_mapped_n` and `dc_institutional_n`. Do not add them.
+- `dc_announced_n` **is additive**: an entry exists only while no other source has the facility, so it can be added to the union without double counting.
 
 ## Community engagement indicators
 

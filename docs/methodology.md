@@ -119,18 +119,24 @@ The general lesson is worth stating: **a facility can be present in a source and
 
 Clarke County is the clearest illustration of why this source exists: it registers zero data centers in every other source in this dataset, and it houses the University of Georgia's central research computing facility.
 
+### Announced facilities: projects no other source has reached yet
+
+A newly announced campus can be months ahead of its first air permit and of the development map. The announced registry holds those facilities, under the same rules as the institutional registry: curated by hand, a public source URL on every record, enforced in code. An entry exists only while the facility is absent from every other source and is removed once another source picks it up, so `dc_announced_n` adds to the union without double counting.
+
+**Current yield:** 1 facility. Project Camellia, OpenAI's campus in Effingham County, announced in July 2026, holds no Georgia EPD air permit under any SIC code as of the July 2026 pull and does not appear on the EPIcenter development map. It surfaced in a crosswalk against Science for Georgia's data center map (`notebooks/crosswalk_science_for_georgia.py`), which is the facility list cited in Drawdown Georgia's guide to data centers. It is recorded as planned, matching that map, and moves to construction once a public source confirms site work.
+
 ### The statewide total is a range, not a number
 
 Reporting a single "how many data centers does Georgia have" figure requires knowing which facilities appear in more than one source, and that cannot be established: EPIcenter publishes bare coordinates with no names, so nothing can be matched across sources by identity.
 
-The dataset therefore reports the **conservative** union, `max(dc_mapped_n, dc_permitted_n) + dc_institutional_n` per county, which assumes every permitted facility is also mapped. That assumption is chosen because it can only undercount, never double-count.
+The dataset therefore reports the **conservative** union, `max(dc_mapped_n, dc_permitted_n) + dc_institutional_n + dc_announced_n` per county, which assumes every permitted facility is also mapped. That assumption is chosen because it can only undercount, never double-count.
 
 | Assumption | Statewide total |
 |---|---|
-| Every permitted facility is also on EPIcenter's map (the published rule) | **127** |
-| No overlap between the two sources | 163 |
+| Every permitted facility is also on EPIcenter's map (the published rule) | **128** |
+| No overlap between the two sources | 164 |
 
-**So the defensible statement is "at least 127 facilities," not "127 facilities."** The 36-facility spread is the cost of not being able to match by identity. Closing it requires coordinate-level matching, which was not completed in Phase 5. Any headline figure drawn from this dataset should carry the "at least."
+**So the defensible statement is "at least 128 facilities," not "128 facilities."** The 36-facility spread is the cost of not being able to match by identity. Closing it requires coordinate-level matching, which was not completed in Phase 5. Any headline figure drawn from this dataset should carry the "at least."
 
 **Why the institutional count is not added to `dc_mapped_n`.** Whether EPIcenter's development map already includes any of these three facilities has not been verified facility by facility, and EPIcenter publishes bare coordinates with no names, so it cannot be verified by identity. Summing the two would risk double-counting Fulton County. `dc_institutional_n` is therefore published as its own variable, and **a county's full footprint is the union of `dc_mapped_n` and `dc_institutional_n`, not their sum.** Resolving the overlap by coordinate was not completed in Phase 5 and remains open.
 
@@ -174,7 +180,7 @@ EPIcenter publishes its facilities as bare coordinates with a development stage,
 
 **This is the honest limit of the method.** A county where EPD finds 1 and EPIcenter finds 4 tells you three more facilities exist there at some stage. It does not establish that EPD's one is among EPIcenter's four. Facility-level matching would require names, which EPIcenter does not publish.
 
-**Statewide, as of this pull:** EPD air permits reach 38 facilities. EPIcenter maps 123, of which 73 are operational, 16 under construction, and 34 planned. Thirty-three counties show activity in at least one source, and the union across all sources is 127 facilities: EPIcenter's 123, the 2 institutional facilities not already in the permit record, and the 2 permitted facilities in Forsyth and Jackson that EPIcenter's map does not show.
+**Statewide, as of this pull:** EPD air permits reach 38 facilities. EPIcenter maps 123, of which 73 are operational, 16 under construction, and 34 planned. Thirty-four counties show activity in at least one source, and the union across all sources is 128 facilities: EPIcenter's 123, the 2 institutional facilities not already in the permit record, the 2 permitted facilities in Forsyth and Jackson that EPIcenter's map does not show, and Project Camellia in Effingham.
 
 The 34 planned facilities explain part of the gap, since a proposal would not hold a permit yet. The 73 operational ones do not: an operating data center with backup generators should hold an air permit. Three explanations remain open, and the reconciliation is what will distinguish them:
 

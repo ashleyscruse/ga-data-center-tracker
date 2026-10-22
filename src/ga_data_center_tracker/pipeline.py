@@ -46,7 +46,7 @@ from .delivery import (
     build_transformed_rows,
     write_workbook,
 )
-from .scrapers import epa_frs, epd_permit_docs, epicenter, ga_epd_air, institutional
+from .scrapers import announced, epa_frs, epd_permit_docs, epicenter, ga_epd_air, institutional
 
 # Facilities first permitted in this year or later count as the current buildout.
 # 2023 is the inflection point in the EPD permit record: before it, Georgia issued
@@ -161,6 +161,30 @@ def _institutional_original_rows(facilities) -> list[dict[str, object]]:
             {
                 "source": f.source,
                 "source_id": f.institution,
+                "name": f.name,
+                "county": tracker_name or "",
+                "county_fips": fips_by_name.get(tracker_name, ""),
+                "stage": f.stage,
+                "city": f.city,
+                "source_url": f.source_url,
+                "note": f.note,
+            }
+        )
+        rows.append(row)
+    return rows
+
+
+def _announced_original_rows(facilities) -> list[dict[str, object]]:
+    """Flatten announced facility records into the shared Original-sheet schema."""
+    rows = []
+    fips_by_name = {c.tracker_name: c.fips for c in load_reference()}
+    for f in facilities:
+        row: dict[str, object] = {col: "" for col in ORIGINAL_COLUMNS}
+        tracker_name = normalize_county(f.county_raw)
+        row.update(
+            {
+                "source": f.source,
+                "source_id": f.developer,
                 "name": f.name,
                 "county": tracker_name or "",
                 "county_fips": fips_by_name.get(tracker_name, ""),
@@ -471,6 +495,38 @@ def run(
         )
     )
 
+    # --- Announced data centers ---------------------------------------------------
+    # Curated: publicly announced facilities absent from every other source. See
+    # scrapers/announced.py. Additive with the other facility variables by rule.
+    if verbose:
+        print("Loading announced data center registry...")
+    ann_facilities = announced.load_registry()
+    ann_counts = announced.facilities_to_county_counts(ann_facilities)
+    for county in counties:
+        county_values[county.tracker_name]["dc_announced_n"] = ann_counts[county.tracker_name]
+    original_rows += _announced_original_rows(ann_facilities)
+    variables.append(
+        Variable(
+            varname="dc_announced_n",
+            definition=(
+                "Count of publicly announced data centers in the county that appear in "
+                "no other source in this dataset: no state air permit, not on the "
+                "development map, not institutional. Additive with the union of the "
+                "other facility variables, because an entry is removed once it "
+                "appears in any other source."
+            ),
+            units="facilities",
+            source=announced.SOURCE_NAME,
+            vintage="compiled from public reporting",
+            date_pulled=pulled_on,
+            original_name="Public announcements and news coverage (per-facility URLs on the Original sheet)",
+            transformations=(
+                "Hand-compiled; each facility carries a public source URL, enforced in "
+                "code, and is assigned to its county via the reference table."
+            ),
+        )
+    )
+
     long_rows = build_long_rows(county_values)
     transformed_rows = build_transformed_rows(county_values)
 
@@ -482,8 +538,8 @@ def run(
         notes=(
             "Phase 5 draft dataset. Facility counts by stage from the Georgia Tech "
             "EPIcenter development map; permitted facilities with dates from Georgia "
-            "EPD air permits; institutional (campus) facilities from a curated, "
-            "source-cited registry; local government response from the EPIcenter "
+            "EPD air permits; institutional (campus) and announced facilities from "
+            "curated, source-cited registries; local government response from the EPIcenter "
             "Ordinance Hub. Facility variables are NOT additive: see the additivity "
             "rules in docs/data_dictionary.md. EPIcenter-derived variables are "
             "attributed to Georgia Tech and their redistribution terms are pending "

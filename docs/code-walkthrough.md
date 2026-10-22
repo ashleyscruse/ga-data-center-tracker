@@ -8,7 +8,7 @@ For the research reasoning behind these choices, see [methodology.md](methodolog
 
 ## 1. What this system does
 
-It builds a county-level dataset of data center activity across all 159 Georgia counties and writes it out in the exact Excel format the Drawdown Georgia Solutions Tracker requires. It draws from four sources, produces eleven per-county variables, and keeps the facility-level records behind those counts in the same workbook.
+It builds a county-level dataset of data center activity across all 159 Georgia counties and writes it out in the exact Excel format the Drawdown Georgia Solutions Tracker requires. It draws from five sources, produces twelve per-county variables, and keeps the facility-level records behind those counts in the same workbook.
 
 ---
 

@@ -19,7 +19,7 @@ The result is a county-level view spanning all 159 Georgia counties, designed to
 
 ## What's In The Dataset
 
-One row per Georgia county, 159 counties, joined on county FIPS. Eleven indicators built from four public sources.
+One row per Georgia county, 159 counties, joined on county FIPS. Twelve indicators built from five public sources.
 
 | Indicator | What it counts |
 |---|---|
@@ -28,6 +28,7 @@ One row per Georgia county, 159 counties, joined on county FIPS. Eleven indicato
 | `dc_permitted_n` | Facilities holding a Georgia state air permit, the only dated measure |
 | `dc_permitted_recent_n` | Of those, first permitted in 2023 or later |
 | `dc_institutional_n` | University and college data centers |
+| `dc_announced_n` | Publicly announced data centers that no other source has yet |
 | `dc_ordinance`, `dc_moratorium_n`, `dc_moratorium_active_n`, `dc_local_action` | How local government has formally responded |
 
 **The counts are deliberately not merged into a single number.** Each source sees a different slice of Georgia's data centers, and no source sees all of them. Merging would require matching facilities across sources by identity, which the available data does not support. The dataset reports each source separately, documents what each one can and cannot see, and publishes the county-by-county disagreement between them rather than smoothing it over.
