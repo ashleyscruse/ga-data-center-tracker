@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counting Georgia's Data Centers</title>
+<meta name="description" content="A county-level count of data centers in all 159 Georgia counties, built for the Drawdown Georgia Solutions Tracker.">
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --surface-2: #f3f2ef;
+  --border: #dddcd7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #6b6a66;
+  --link: #1c5cab;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --empty: #ebeae6;
+  --seq-1: #cde2fb; --seq-2: #86b6ef; --seq-3: #3987e5; --seq-4: #1c5cab; --seq-5: #0d366b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #1a1a19; --surface-2: #242423; --border: #3a3a37;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #9d9c94;
+    --link: #86b6ef;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+    --empty: #2e2e2c;
+    --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1a1a19; --surface-2: #242423; --border: #3a3a37;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #9d9c94;
+  --link: #86b6ef;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+  --empty: #2e2e2c;
+  --seq-1: #184f95; --seq-2: #256abf; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--surface); color: var(--text-primary);
+  font: 17px/1.65 Georgia, "Times New Roman", serif;
+}
+main { max-width: 760px; margin: 0 auto; padding: 48px 16px 80px; }
+header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 8px; }
+.eyebrow { font: 600 13px/1.4 system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 8px; }
+h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 12px; }
+.byline { font: 15px/1.5 system-ui, sans-serif; color: var(--text-secondary); margin: 0; }
+h2 { font-size: 1.35rem; margin: 40px 0 8px; }
+a { color: var(--link); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 24px 0 8px; }
+.stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.stat b { display: block; font: 600 1.9rem/1.1 system-ui, sans-serif; }
+.stat span { font: 14px/1.4 system-ui, sans-serif; color: var(--text-secondary); }
+figure { margin: 28px 0; }
+figcaption { font: 14px/1.5 system-ui, sans-serif; color: var(--text-secondary); margin-top: 8px; }
+figcaption strong { color: var(--text-primary); }
+.chart { width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font: 12px system-ui, sans-serif; fill: var(--text-secondary); }
+.chart .val { fill: var(--text-primary); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 13px/1.4 system-ui, sans-serif; color: var(--text-secondary); margin: 6px 0 0; padding: 0; list-style: none; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+details { font: 14px/1.5 system-ui, sans-serif; margin-top: 6px; }
+summary { cursor: pointer; color: var(--link); }
+table { border-collapse: collapse; margin-top: 8px; width: 100%; }
+th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+.tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font: 13px/1.45 system-ui, sans-serif; box-shadow: 0 2px 10px rgba(0,0,0,.15); opacity: 0; transition: opacity .08s; z-index: 10; max-width: 240px; }
+.tip b { display: block; }
+.county { stroke: var(--surface); stroke-width: .6; }
+.county:hover { stroke: var(--text-primary); stroke-width: 1.4; }
+footer { border-top: 1px solid var(--border); margin-top: 48px; padding-top: 16px; font: 14px/1.6 system-ui, sans-serif; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="eyebrow">Drawdown Georgia, Phase 5</p>
+  <h1>Counting Georgia's Data Centers, County by County</h1>
+  <p class="byline">Ashley Scruse, PhD · Morehouse College · October 2026</p>
+</header>
+
+<h2>Summary</h2>
+<p>This project counted data centers in all 159 Georgia counties so the results could be added to the Drawdown Georgia Solutions Tracker. It found at least 128 data centers in 34 counties. It also recorded which counties have passed local rules about data centers. All of the data, code, and methods are public.</p>
+
+<div class="stats">
+  <div class="stat"><b>128+</b><span>data centers statewide</span></div>
+  <div class="stat"><b>34</b><span>counties with at least one</span></div>
+  <div class="stat"><b>38</b><span>hold state air permits</span></div>
+  <div class="stat"><b>13</b><span>counties with a data center ordinance</span></div>
+</div>
+
+<h2>Background</h2>
+<p>The <a href="https://drawdownga.gatech.edu/">Drawdown Georgia Solutions Tracker</a>, run by a team at Georgia Tech led by Dr. Marilyn Brown, measures how each Georgia county is adopting climate solutions, such as utility-scale solar. Every measure in the Tracker is reported by county.</p>
+<p>This project was Phase 5 of Drawdown Georgia's work. Its goal was to build a county-level measure of data centers that fits the Tracker's format. Reported this way, data center counts can be compared with the Tracker's electricity solutions in the same counties.</p>
+<p>For this project, a data center is a building made mainly to hold computers and data storage at a large scale. Server rooms inside other kinds of buildings do not count.</p>
+
+<h2>Data Sources</h2>
+<p>The project used only free, public sources.</p>
+<ol>
+  <li><strong>State air permits.</strong> Data centers keep diesel generators for backup power. Georgia's Environmental Protection Division (EPD) must permit those generators. Each permit shows the county and the date it was issued.</li>
+  <li><strong>Georgia Tech's data center map.</strong> Georgia Tech's Energy Policy and Innovation Center maps data centers across the state. Each one is marked as operating, under construction, or planned. The center also tracks which counties have passed data center rules (ordinances) or temporary pauses on new projects (moratoria).</li>
+  <li><strong>Campus data centers.</strong> Some universities run their own data centers. These were added by hand from public announcements.</li>
+  <li><strong>Announced projects.</strong> Projects that have been publicly announced but do not appear in any other source yet. These were also added by hand.</li>
+</ol>
+<p>Every facility added by hand has a public source link in the dataset.</p>
+
+<h2>Results</h2>
+
+<figure>
+  <div class="chart" id="map-count" role="img" aria-label="Map of Georgia counties shaded by number of data centers"></div>
+  <ul class="legend" id="legend-count"></ul>
+  <figcaption><strong>Figure 1.</strong> Data centers per county, all stages, using the conservative statewide count. Hover a county for its numbers.</figcaption>
+  <details><summary>Show as table</summary><table id="tbl-count"></table></details>
+</figure>
+
+<p><strong>Permitted data centers.</strong> 38 data centers hold state air permits, across 11 counties. Fulton County has 16 and Douglas County has 10. By the year of their first permit: 15 through 2021, 3 in 2022, 2 in 2023, 4 in 2024, 7 in 2025, and 7 in the first half of 2026.</p>
+
+<figure>
+  <div class="chart" id="bar-years" role="img" aria-label="Bar chart of data centers by year of first state air permit"></div>
+  <figcaption><strong>Figure 2.</strong> Permitted data centers by year of first state air permit. 2026 covers January through June.</figcaption>
+  <details><summary>Show as table</summary><table id="tbl-years"></table></details>
+</figure>
+
+<p><strong>Mapped data centers.</strong> Georgia Tech's map shows 123 data centers in 30 counties: 73 operating, 16 under construction, and 34 planned.</p>
+
+<figure>
+  <div class="chart" id="bar-counties" role="img" aria-label="Bar chart comparing permitted and mapped data centers in the counties with the most data centers"></div>
+  <ul class="legend" id="legend-counties"></ul>
+  <figcaption><strong>Figure 3.</strong> Permitted and mapped data centers in the ten counties with the most. The two sources count different things, so the bars are not expected to match.</figcaption>
+  <details><summary>Show as table</summary><table id="tbl-counties"></table></details>
+</figure>
+
+<p><strong>Campus and announced data centers.</strong> 3 campus data centers in 2 counties, and 1 announced project: Project Camellia, a planned campus in Effingham County.</p>
+
+<p><strong>Statewide total.</strong> At least 128 data centers in 34 counties. The total is given as a range, from 128 to 164, because the sources cannot always be matched building by building. Georgia Tech's map shows locations but not names or addresses, so a permitted building cannot always be matched to a point on the map. The lower number assumes every permitted building is also on the map.</p>
+
+<p><strong>Local rules.</strong> 13 counties have passed a data center ordinance. 10 counties have passed a moratorium at some point, 11 in total. None of the moratoria were still in effect when the data was collected. 20 counties have at least one data center and no ordinance or moratorium. 4 counties have rules but no data center.</p>
+
+<figure>
+  <div class="chart" id="map-rules" role="img" aria-label="Map of Georgia counties by whether they have data centers and local rules"></div>
+  <ul class="legend" id="legend-rules"></ul>
+  <figcaption><strong>Figure 4.</strong> Counties by whether they have a data center and whether they have passed an ordinance or moratorium.</figcaption>
+  <details><summary>Show as table</summary><table id="tbl-rules"></table></details>
+</figure>
+
+<h2>Comparison With Science for Georgia</h2>
+<p>Drawdown Georgia's recent guide to data centers cites a map by Science for Georgia. That map was compared with this dataset. Science for Georgia lists 188 active data centers in 43 counties. Most of Georgia Tech's mapped data centers match a Science for Georgia location. The comparison found one large project missing from this project's sources, Project Camellia in Effingham County, and it was added.</p>
+
+<h2>Limitations</h2>
+<p>This method only counts data centers that appear in a public record: a state air permit, Georgia Tech's map, or a published announcement. It misses facilities that have not filed for a permit, that run generators too small to need one, or that are not on the map. Some data centers the automated sources missed were added by hand, each with a public source. Others are likely still missing, so 128 is a minimum.</p>
+<p>The local rules show what county governments did. They do not show what residents said at meetings or in public comments. Collecting that is a possible next step.</p>
+
+<h2>Data Availability</h2>
+<p>The dataset, the code that builds it, and the full <a href="https://github.com/ashleyscruse/ga-data-center-tracker/blob/main/docs/methodology.md">methodology</a> are at <a href="https://github.com/ashleyscruse/ga-data-center-tracker">github.com/ashleyscruse/ga-data-center-tracker</a>. Anyone can rerun the code to rebuild the dataset or update it as new permits are issued.</p>
+
+<h2>Acknowledgments</h2>
+<p>This work was funded by the Ray C. Anderson Foundation through Drawdown Georgia. Thank you to Dr. Marilyn Brown and the Solutions Tracker team at Georgia Tech. The ordinance records and data center map come from Georgia Tech's Energy Policy and Innovation Center.</p>
+
+<footer>Data as of August 2026, with Project Camellia added October 2026. County boundaries: U.S. Census Bureau, via us-atlas.</footer>
+</main>
+<div class="tip" id="tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script>
+const DATA = {"counties":[{"f":"13001","n":"Appling","u":1,"m":1,"p":0,"op":1,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13003","n":"Atkinson","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13005","n":"Bacon","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13007","n":"Baker","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13009","n":"Baldwin","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13011","n":"Banks","u":1,"m":1,"p":0,"op":0,"c":1,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13013","n":"Barrow","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13015","n":"Bartow","u":3,"m":3,"p":0,"op":0,"c":1,"pl":2,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13017","n":"Ben Hill","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13019","n":"Berrien","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13021","n":"Bibb","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13023","n":"Bleckley","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13025","n":"Brantley","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13027","n":"Brooks","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13029","n":"Bryan","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13031","n":"Bulloch","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":1,"la":1},{"f":"13033","n":"Burke","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13035","n":"Butts","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13037","n":"Calhoun","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13039","n":"Camden","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13043","n":"Candler","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13045","n":"Carroll","u":1,"m":1,"p":0,"op":1,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13047","n":"Catoosa","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13049","n":"Charlton","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13051","n":"Chatham","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13053","n":"Chattahoochee","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13055","n":"Chattooga","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13057","n":"Cherokee","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13059","n":"Clarke","u":1,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":1,"a":0,"o":0,"mo":0,"la":0},{"f":"13061","n":"Clay","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13063","n":"Clayton","u":2,"m":2,"p":0,"op":0,"c":1,"pl":1,"i":0,"a":0,"o":0,"mo":1,"la":1},{"f":"13065","n":"Clinch","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13067","n":"Cobb","u":6,"m":6,"p":0,"op":5,"c":1,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13069","n":"Coffee","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13071","n":"Colquitt","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13073","n":"Columbia","u":1,"m":1,"p":0,"op":0,"c":0,"pl":1,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13075","n":"Cook","u":1,"m":1,"p":0,"op":1,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13077","n":"Coweta","u":3,"m":3,"p":0,"op":0,"c":0,"pl":3,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13079","n":"Crawford","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":1,"la":1},{"f":"13081","n":"Crisp","u":1,"m":1,"p":0,"op":0,"c":0,"pl":1,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13083","n":"Dade","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13085","n":"Dawson","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13087","n":"Decatur","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13089","n":"DeKalb","u":2,"m":2,"p":0,"op":2,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13091","n":"Dodge","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13093","n":"Dooly","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13095","n":"Dougherty","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13097","n":"Douglas","u":16,"m":16,"p":10,"op":9,"c":4,"pl":3,"i":0,"a":0,"o":1,"mo":1,"la":1},{"f":"13099","n":"Early","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13101","n":"Echols","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13103","n":"Effingham","u":1,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":1,"o":0,"mo":0,"la":0},{"f":"13105","n":"Elbert","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13107","n":"Emanuel","u":2,"m":2,"p":0,"op":2,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13109","n":"Evans","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13111","n":"Fannin","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13113","n":"Fayette","u":2,"m":2,"p":1,"op":1,"c":0,"pl":1,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13115","n":"Floyd","u":2,"m":2,"p":0,"op":0,"c":1,"pl":1,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13117","n":"Forsyth","u":1,"m":0,"p":1,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13119","n":"Franklin","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13121","n":"Fulton","u":46,"m":45,"p":16,"op":35,"c":4,"pl":6,"i":2,"a":0,"o":1,"mo":1,"la":1},{"f":"13123","n":"Gilmer","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13125","n":"Glascock","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13127","n":"Glynn","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13129","n":"Gordon","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13131","n":"Grady","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13133","n":"Greene","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13135","n":"Gwinnett","u":6,"m":6,"p":2,"op":6,"c":0,"pl":0,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13137","n":"Habersham","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13139","n":"Hall","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13141","n":"Hancock","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13143","n":"Haralson","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13145","n":"Harris","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13147","n":"Hart","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13149","n":"Heard","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13151","n":"Henry","u":2,"m":2,"p":1,"op":0,"c":1,"pl":1,"i":0,"a":0,"o":1,"mo":1,"la":1},{"f":"13153","n":"Houston","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13155","n":"Irwin","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13157","n":"Jackson","u":1,"m":0,"p":1,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13159","n":"Jasper","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13161","n":"Jeff Davis","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13163","n":"Jefferson","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13165","n":"Jenkins","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13167","n":"Johnson","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13169","n":"Jones","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13171","n":"Lamar","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13173","n":"Lanier","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13175","n":"Laurens","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13177","n":"Lee","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13179","n":"Liberty","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13181","n":"Lincoln","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13183","n":"Long","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13185","n":"Lowndes","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13187","n":"Lumpkin","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13189","n":"McDuffie","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13191","n":"McIntosh","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13193","n":"Macon","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13195","n":"Madison","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13197","n":"Marion","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13199","n":"Meriwether","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13201","n":"Miller","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13205","n":"Mitchell","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13207","n":"Monroe","u":3,"m":3,"p":0,"op":0,"c":0,"pl":3,"i":0,"a":0,"o":0,"mo":1,"la":1},{"f":"13209","n":"Montgomery","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13211","n":"Morgan","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13213","n":"Murray","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13215","n":"Muscogee","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13217","n":"Newton","u":4,"m":4,"p":3,"op":1,"c":0,"pl":3,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13219","n":"Oconee","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13221","n":"Oglethorpe","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13223","n":"Paulding","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13225","n":"Peach","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13227","n":"Pickens","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13229","n":"Pierce","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13231","n":"Pike","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":1,"mo":1,"la":1},{"f":"13233","n":"Polk","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13235","n":"Pulaski","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13237","n":"Putnam","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13239","n":"Quitman","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13241","n":"Rabun","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13243","n":"Randolph","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13245","n":"Richmond","u":1,"m":1,"p":0,"op":0,"c":0,"pl":1,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13247","n":"Rockdale","u":2,"m":2,"p":1,"op":0,"c":1,"pl":1,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13249","n":"Schley","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13251","n":"Screven","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13253","n":"Seminole","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13255","n":"Spalding","u":2,"m":2,"p":0,"op":0,"c":0,"pl":2,"i":0,"a":0,"o":1,"mo":1,"la":1},{"f":"13257","n":"Stephens","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13259","n":"Stewart","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13261","n":"Sumter","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13263","n":"Talbot","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13265","n":"Taliaferro","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13267","n":"Tattnall","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13269","n":"Taylor","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13271","n":"Telfair","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13273","n":"Terrell","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13275","n":"Thomas","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13277","n":"Tift","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13279","n":"Toombs","u":1,"m":1,"p":0,"op":1,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13281","n":"Towns","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13283","n":"Treutlen","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13285","n":"Troup","u":3,"m":3,"p":1,"op":1,"c":0,"pl":2,"i":0,"a":0,"o":0,"mo":2,"la":1},{"f":"13287","n":"Turner","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13289","n":"Twiggs","u":1,"m":1,"p":0,"op":0,"c":0,"pl":1,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13291","n":"Union","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13293","n":"Upson","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13295","n":"Walker","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13297","n":"Walton","u":1,"m":1,"p":0,"op":0,"c":0,"pl":1,"i":0,"a":0,"o":1,"mo":0,"la":1},{"f":"13299","n":"Ware","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13301","n":"Warren","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13303","n":"Washington","u":2,"m":2,"p":0,"op":2,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13305","n":"Wayne","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13307","n":"Webster","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13309","n":"Wheeler","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13311","n":"White","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13313","n":"Whitfield","u":5,"m":5,"p":1,"op":4,"c":1,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13315","n":"Wilcox","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13317","n":"Wilkes","u":1,"m":1,"p":0,"op":1,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13319","n":"Wilkinson","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0},{"f":"13321","n":"Worth","u":0,"m":0,"p":0,"op":0,"c":0,"pl":0,"i":0,"a":0,"o":0,"mo":0,"la":0}],"years":{"\u22642021":15,"2022":3,"2024":4,"2025":7,"2026":7,"2023":2}};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const tip = document.getElementById('tip');
+function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1; moveTip(e); }
+function moveTip(e) {
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+}
+function hideTip() { tip.style.opacity = 0; }
+function table(id, head, rows) {
+  const t = document.getElementById(id);
+  t.innerHTML = '<tr>' + head.map((h, i) => `<th class="${i ? 'n' : ''}">${h}</th>`).join('') + '</tr>' +
+    rows.map(r => '<tr>' + r.map((c, i) => `<td class="${i ? 'n' : ''}">${c}</td>`).join('') + '</tr>').join('');
+}
+function legend(id, items) {
+  document.getElementById(id).innerHTML = items.map(([c, l]) => `<li><i style="background:${c}"></i>${l}</li>`).join('');
+}
+const byFips = new Map(DATA.counties.map(c => [c.f, c]));
+
+// --- Maps --------------------------------------------------------------------
+const countBins = [[0, 0, '--empty', '0'], [1, 1, '--seq-1', '1'], [2, 3, '--seq-2', '2 to 3'], [4, 9, '--seq-3', '4 to 9'], [10, 19, '--seq-4', '10 to 19'], [20, 999, '--seq-5', '20 or more']];
+const countVar = u => countBins.find(b => u >= b[0] && u <= b[1])[2];
+const ruleCat = c => c.u > 0 && !c.la ? ['--series-2', 'Data center, no local rules']
+  : c.u > 0 && c.la ? ['--series-1', 'Data center and local rules']
+  : c.la ? ['--series-3', 'Local rules, no data center'] : ['--empty', 'Neither'];
+const ruleOrder = ['Data center, no local rules', 'Data center and local rules', 'Local rules, no data center', 'Neither'];
+
+let geo;
+function drawMap(id, fillVar, tipHtml) {
+  const el = document.getElementById(id);
+  const w = el.clientWidth || 700, h = Math.round(w * 1.05);
+  const proj = d3.geoMercator().fitSize([w, h], geo);
+  const path = d3.geoPath(proj);
+  el.innerHTML = '';
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+  svg.selectAll('path').data(geo.features).join('path')
+    .attr('class', 'county').attr('d', path)
+    .attr('fill', d => css(fillVar(byFips.get(d.id))))
+    .on('mousemove', (e, d) => showTip(e, tipHtml(byFips.get(d.id))))
+    .on('mouseleave', hideTip);
+}
+function drawMaps() {
+  drawMap('map-count', c => countVar(c.u), c =>
+    `<b>${c.n} County</b>${c.u} data center${c.u === 1 ? '' : 's'} (conservative count)<br>Mapped: ${c.m} · Permitted: ${c.p}` +
+    (c.i ? `<br>Campus: ${c.i}` : '') + (c.a ? `<br>Announced: ${c.a}` : ''));
+  drawMap('map-rules', c => ruleCat(c)[0], c =>
+    `<b>${c.n} County</b>${ruleCat(c)[1]}<br>Data centers: ${c.u}<br>Ordinance: ${c.o ? 'yes' : 'no'} · Moratoria: ${c.mo}`);
+  legend('legend-count', countBins.map(b => [css(b[2]), b[3]]));
+  legend('legend-rules', ruleOrder.map(l => {
+    const v = { 'Data center, no local rules': '--series-2', 'Data center and local rules': '--series-1', 'Local rules, no data center': '--series-3', 'Neither': '--empty' }[l];
+    const n = DATA.counties.filter(c => ruleCat(c)[1] === l).length;
+    return [css(v), `${l} (${n})`];
+  }));
+}
+
+// --- Bars --------------------------------------------------------------------
+function drawYears() {
+  const order = ['≤2021', '2022', '2023', '2024', '2025', '2026'];
+  const labels = { '≤2021': 'Through 2021', '2026': '2026 (Jan to Jun)' };
+  const rows = order.map(k => [labels[k] || k, DATA.years[k] || 0]);
+  const el = document.getElementById('bar-years');
+  const w = el.clientWidth || 700, h = 260, m = { t: 20, r: 8, b: 30, l: 8 };
+  const x = d3.scaleBand().domain(rows.map(r => r[0])).range([m.l, w - m.r]).padding(0.35);
+  const y = d3.scaleLinear().domain([0, d3.max(rows, r => r[1])]).nice().range([h - m.b, m.t]);
+  el.innerHTML = '';
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+  svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', css('--border'));
+  const g = svg.selectAll('g.b').data(rows).join('g');
+  g.append('path').attr('fill', css('--series-1')).attr('d', r => roundTop(x(r[0]), y(r[1]), x.bandwidth(), y(0) - y(r[1]), 4))
+    .on('mousemove', (e, r) => showTip(e, `<b>${r[0]}</b>${r[1]} data centers first permitted`)).on('mouseleave', hideTip);
+  g.append('text').attr('class', 'val').attr('text-anchor', 'middle').attr('x', r => x(r[0]) + x.bandwidth() / 2).attr('y', r => y(r[1]) - 6).text(r => r[1]);
+  g.append('text').attr('text-anchor', 'middle').attr('x', r => x(r[0]) + x.bandwidth() / 2).attr('y', h - 10).text(r => w < 520 ? r[0].replace(' (Jan to Jun)', '*').replace('Through ', '≤') : r[0]);
+  table('tbl-years', ['First permit', 'Data centers'], rows);
+}
+function roundTop(x, y, w, h, r) {
+  r = Math.min(r, h, w / 2);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function roundRight(x, y, w, h, r) {
+  r = Math.min(r, w, h / 2);
+  return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+}
+function drawCounties() {
+  const top = [...DATA.counties].sort((a, b) => b.u - a.u || a.n.localeCompare(b.n)).slice(0, 10);
+  const series = [['p', 'Permitted (state air permits)', '--series-1'], ['m', 'Mapped (Georgia Tech map)', '--series-2']];
+  const el = document.getElementById('bar-counties');
+  const w = el.clientWidth || 700, row = 34, m = { t: 4, r: 36, b: 4, l: 92 };
+  const h = m.t + m.b + top.length * row;
+  const x = d3.scaleLinear().domain([0, d3.max(top, c => Math.max(c.p, c.m))]).range([m.l, w - m.r]);
+  el.innerHTML = '';
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+  const bh = 12;
+  top.forEach((c, i) => {
+    const y0 = m.t + i * row + 4;
+    svg.append('text').attr('x', m.l - 8).attr('y', y0 + bh + 1).attr('text-anchor', 'end').text(c.n);
+    series.forEach(([k, label, v], j) => {
+      const y = y0 + j * (bh + 2);
+      const val = c[k];
+      if (val > 0) svg.append('path').attr('fill', css(v)).attr('d', roundRight(x(0), y, x(val) - x(0), bh, 4))
+        .on('mousemove', e => showTip(e, `<b>${c.n} County</b>${label}: ${val}`)).on('mouseleave', hideTip);
+      svg.append('text').attr('class', 'val').attr('x', x(val) + 5).attr('y', y + bh - 2).text(val);
+    });
+  });
+  svg.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', h).attr('stroke', css('--border'));
+  legend('legend-counties', series.map(s => [css(s[2]), s[1]]));
+  table('tbl-counties', ['County', 'Permitted', 'Mapped'], top.map(c => [c.n, c.p, c.m]));
+}
+
+function tables() {
+  const withDc = DATA.counties.filter(c => c.u > 0).sort((a, b) => b.u - a.u || a.n.localeCompare(b.n));
+  table('tbl-count', ['County', 'Data centers', 'Mapped', 'Permitted'], withDc.map(c => [c.n, c.u, c.m, c.p]));
+  const ruled = DATA.counties.filter(c => c.u > 0 || c.la).sort((a, b) => a.n.localeCompare(b.n));
+  table('tbl-rules', ['County', 'Data centers', 'Ordinance', 'Moratoria'], ruled.map(c => [c.n, c.u, c.o ? 'yes' : 'no', c.mo]));
+}
+
+function drawAll() { if (geo) drawMaps(); drawYears(); drawCounties(); }
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json').then(us => {
+  const all = topojson.feature(us, us.objects.counties);
+  geo = { type: 'FeatureCollection', features: all.features.filter(f => f.id.startsWith('13')) };
+  drawMaps();
+});
+drawYears(); drawCounties(); tables();
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 150); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll);
+</script>
+</body>
+</html>
